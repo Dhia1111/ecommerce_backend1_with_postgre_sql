@@ -27,7 +27,7 @@ namespace Ecommerce1
         // Method to retrieve values
         public static string GetJwtSecret()
         {
-            return _configuration["AppSettings:JWT_SECRET"];
+            return _configuration["JWT_SECRET"];
         }
         public static string GetTheBestImageExtention()
         {
@@ -35,7 +35,7 @@ namespace Ecommerce1
         }
         public static string GetStripSecret()
         {
-            return _configuration["AppSettings:stripeSecretKey"];
+            return _configuration["stripeSecretKey"];
         }
 
         public static string SetImageURL(string ImageName)

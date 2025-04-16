@@ -59,7 +59,7 @@ namespace ConnectionLayer
 
             _configuration = builder.Build();
 
-            var st = _configuration["ConnectionSetting:Defualt"];
+            var st = _configuration["ConnectionSetting"];
            if (!string.IsNullOrEmpty(st)) ConnectionString =st ;
         }
     }
