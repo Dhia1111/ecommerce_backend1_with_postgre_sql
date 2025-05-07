@@ -18,4 +18,4 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app/publish .
 
-ENTRYPOINT ["dotnet", "API.dll"]
+ENTRYPOINT ["dotnet", "Ecommerce1.dll"]
