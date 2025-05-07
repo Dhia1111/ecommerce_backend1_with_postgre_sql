@@ -40,6 +40,20 @@ public class DTOUser
     }
 
 
+    public DTOUser()
+    {
+        this.UserID = -1;
+        this.PersonID = -1;
+
+        this.UserRole = DTOUser.enRole.Customer;
+        this.UserName = "";
+        this.UserPassword = "";
+        this.UserAtherization = 0;
+        this.CreatedAt = DateTime.Now.ToString();
+        this.Person = new DTOPerson(-1, "", "", "", "", "", "", "");
+    }
+
+
 
 }
 

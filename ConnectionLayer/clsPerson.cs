@@ -41,8 +41,21 @@ public class DTOPerson
         this.City = City;
         this.PostCodeAndLocation = PostCode;
     }
+
+    public DTOPerson()
+    {
+        PersonID = -1;
+        FirstName = "";
+        LastName = "";
+        Email = "";
+        Phone = "";
+        this.Country = "";
+        this.City = "";
+        this.PostCodeAndLocation = "";
+    }
+
 }
- 
+
 
 namespace ConnectionLayer
 {

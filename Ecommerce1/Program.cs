@@ -119,12 +119,7 @@ if (app.Environment.IsDevelopment())
 app.UseStaticFiles();
 
 // Serve static files from your custom "images" directory
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(
-        Path.Combine(app.Environment.ContentRootPath, "wwwroot/images")), // Adjust path as needed
-    RequestPath = "/wwwroot/images"
-});
+
 
 app.UseRouting();
 app.UseHttpsRedirection();
