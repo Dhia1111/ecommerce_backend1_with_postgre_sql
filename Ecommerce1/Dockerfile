@@ -4,14 +4,14 @@ WORKDIR /src
 
 # Copy solution files
 COPY ../ConnectionLayer ./ConnectionLayer
-COPY ../BussLayer ./BussLayer
+COPY ../BusinessLayer ./BusinessLayer
 COPY . .
 
 # Restore dependencies
-RUN dotnet restore API.csproj
+RUN dotnet restore Ecommerce1.csproj
 
 # Build and publish the app
-RUN dotnet publish API.csproj -c Release -o /app/publish
+RUN dotnet publish Ecommerce1.csproj -c Release -o /app/publish
 
 # Runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
