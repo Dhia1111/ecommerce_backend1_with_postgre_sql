@@ -7,7 +7,6 @@ namespace Ecommerce1.Controllers;
 
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
-using Microsoft.Identity.Client.Platforms.Features.DesktopOs.Kerberos;
 using System.Net.Mail;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;

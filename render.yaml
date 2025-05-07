@@ -1,0 +1,9 @@
+﻿services:
+  - type: web
+    name: ecommerce-api
+    env: docker
+    plan: free
+    autoDeploy: true
+    branch: main
+    dockerContext: ./API
+    dockerfilePath: ./Dockerfile

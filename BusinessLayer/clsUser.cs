@@ -43,7 +43,7 @@ namespace BusinessLayer
             this.Role = User.UserRole;
             this.Atherization = User.UserAtherization;
             _Mode = enMode.Add;
-            _Person = new clsPerson(User.Person.FirstName, User.Person.LastName, User.Person.Email, User.Person.Phone, User.Person.Country, User.Person.City, User.Person.PostCode);
+            _Person = new clsPerson(User.Person.FirstName, User.Person.LastName, User.Person.Email, User.Person.Phone, User.Person.Country, User.Person.City, User.Person.PostCodeAndLocation);
         }
 
          clsUser(int ID, int PersonID, string UserName, string PassWord, byte Athorization , DTOUser.enRole Role,clsPerson Person)

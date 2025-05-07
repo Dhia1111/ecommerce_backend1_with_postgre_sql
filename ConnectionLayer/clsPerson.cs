@@ -26,7 +26,7 @@ public class DTOPerson
 
     public string Phone { get; set; }
     public string Country { get; set; }
-    public string PostCode { get; set; }
+    public string PostCodeAndLocation { get; set; }
     public string  City { get; set; }
 
 
@@ -39,7 +39,7 @@ public class DTOPerson
         Phone = phone;
         this.Country = Country;
         this.City = City;
-        this.PostCode = PostCode;
+        this.PostCodeAndLocation = PostCode;
     }
 }
  
@@ -105,7 +105,7 @@ namespace ConnectionLayer
                                     Person.Phone = Reader["Phone"].ToString();
                                     Person.Country = Reader["Country"].ToString();
                                     Person.City = Reader["City"].ToString();
-                                    Person.PostCode = Reader["PostCode"].ToString();
+                                    Person.PostCodeAndLocation = Reader["PostCode"].ToString();
 
                                     return Person;
                                 }
@@ -221,7 +221,7 @@ namespace ConnectionLayer
                         command.Parameters.AddWithValue("@Phone", person.Phone);
                         command.Parameters.AddWithValue("@Country", person.Country); 
                         command.Parameters.AddWithValue("@City", person.City);
-                        command.Parameters.AddWithValue("@PostCode", person.PostCode);
+                        command.Parameters.AddWithValue("@PostCode", person.PostCodeAndLocation);
 
 
 
@@ -293,7 +293,7 @@ where ""PersonID""=@PersonID";
                         command.Parameters.AddWithValue("@Phone", Person.Phone);
                         command.Parameters.AddWithValue("@Country", Person.Country);
                         command.Parameters.AddWithValue("@City", Person.City);
-                        command.Parameters.AddWithValue("@PostCode", Person.PostCode);
+                        command.Parameters.AddWithValue("@PostCode", Person.PostCodeAndLocation);
                         command.Parameters.AddWithValue("@PersonID", Person.PersonID);
 
 

@@ -64,7 +64,7 @@ namespace BusinessLayer
         public static async Task<clsPerson?> Find(int ID)
         {
             DTOPerson? Person=await ConnectionLayer.clsPerson.Find(ID);
-            if (Person != null) return new clsPerson( Person.PersonID,Person.FirstName, Person.LastName, Person.Email, Person.Phone,Person.Country, Person.City, Person.PostCode);
+            if (Person != null) return new clsPerson( Person.PersonID,Person.FirstName, Person.LastName, Person.Email, Person.Phone,Person.Country, Person.City, Person.PostCodeAndLocation);
             return null;
         }
 

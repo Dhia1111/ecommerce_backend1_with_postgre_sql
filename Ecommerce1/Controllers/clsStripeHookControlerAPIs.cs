@@ -2,7 +2,6 @@
 
 //////////////
 ///
-using Azure.Core;
 using Microsoft.AspNetCore.Mvc;
 using BusinessLayer;
 using Microsoft.AspNetCore.Authorization;
