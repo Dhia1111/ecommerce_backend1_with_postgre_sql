@@ -5,5 +5,5 @@
     plan: free
     autoDeploy: true
     branch: main
-    dockerContext: ./API
-    dockerfilePath: ./Dockerfile
+    dockerContext: ./Ecommerce1
+    dockerfilePath: ./Ecommerce1/Dockerfile
