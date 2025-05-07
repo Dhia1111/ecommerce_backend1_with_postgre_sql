@@ -1,4 +1,5 @@
-﻿using Npgsql;
+﻿using Microsoft.Data.SqlClient;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -424,6 +425,61 @@ where ""TransactionD""=@TransactionID";
 
         }
 
+        public static async Task<Guid> GetTransactionGuidIdFroUnfinshedPayment(int UserID)
+
+        {
+
+            string qery = @" select  ""TransactionGUID""  from ""Transactions""  where ""TransactionUserID""=@TransactionUserID and ""TransactionState""=@TransactionState  LIMIT 1";
+
+
+            try
+            {
+                using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
+                {
+                    connection.Open();
+
+                    using (NpgsqlCommand command = new NpgsqlCommand(qery, connection))
+                    {
+
+                        command.Parameters.AddWithValue("@TransactionUserID", UserID);
+                        command.Parameters.AddWithValue("@TransactionState", (int)DTOTransaction.enState.Pending);
+
+
+                        object TransactionGuid = await command.ExecuteScalarAsync();
+
+                        if (TransactionGuid != null)
+                        {
+
+                            if (Guid.TryParse(TransactionGuid.ToString(), out Guid TransactionGUID))
+                            {
+                                return TransactionGUID;
+                            }
+                            else
+                            {
+                                return Guid.Empty;
+                            }
+
+                        }
+
+
+                    }
+
+                }
+            }
+
+
+            catch
+            {
+
+                return Guid.Empty;
+            }
+
+
+
+
+            return Guid.Empty;
+
+        }
 
 
 

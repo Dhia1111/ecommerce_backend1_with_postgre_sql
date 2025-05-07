@@ -5,9 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 namespace Ecommerce1.Controllers;
 
-using BusinessLayer;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Client.Platforms.Features.DesktopOs.Kerberos;
 using System.Net.Mail;
@@ -29,14 +27,24 @@ public class EcommerceController : ControllerBase
         Response.Cookies.Delete("Authentication");
         
 
-        if (User == null) { return BadRequest("Invalaid User information"); }
-        if (string.IsNullOrEmpty(User.Person.Email)) { return BadRequest("Invalaid User information(Email)"); }
-        if (string.IsNullOrEmpty(User.UserName)) { return BadRequest("Invalaid User information(UserName)"); }
-        if (string.IsNullOrEmpty(User.UserPassword)) { return BadRequest("Invalaid User information(PassWord) "); }
+        if (User == null) { 
+            return BadRequest(new DTOGeneralResponse("Invalaid User information",400,"null data"));
+        
+        }
+        if (string.IsNullOrEmpty(User.Person.Email)) {  
+
+            return BadRequest(new DTOGeneralResponse("nvalaid User information(Email)", 400, "null data"));
+        }
+        if (string.IsNullOrEmpty(User.UserName)) {  
+            return BadRequest(new DTOGeneralResponse("Invalaid User information(UserName)", 400, "null data"));
+        }
+        if (string.IsNullOrEmpty(User.UserPassword)) { 
+            return BadRequest(new DTOGeneralResponse("Invalaid User information(PassWord)", 400, "null data"));
+        }
         {
             // Check if password length is exactly 9
             if (User.UserPassword.Length < 9)
-                return BadRequest("Weak PassWord length should be more then 9");
+             return BadRequest(new DTOGeneralResponse("Weak PassWord length should be more then 9", 400, "null data"));
 
             // Count letters and digits
             int letterCount = 0;
@@ -55,7 +63,7 @@ public class EcommerceController : ControllerBase
 
             if (LetterOrDigetsLessThenTow)
             {
-                return BadRequest("Weak PassWord password should have 9 and above characters and 2 letters at lest  and 2 numbers at lest ");
+                 return BadRequest(new DTOGeneralResponse("Weak PassWord password should have 9 and above characters and 2 letters at lest  and 2 numbers at lest ", 400, "null data"));
 
             }
 
@@ -66,7 +74,8 @@ public class EcommerceController : ControllerBase
  
         if (user != null)
         {
-            return BadRequest("Select another user name ");
+             return BadRequest(new DTOGeneralResponse("Select another user name ", 400, "Unvalid data Serch error"));
+
         }
 
 
@@ -74,9 +83,11 @@ public class EcommerceController : ControllerBase
 
         string hashedPassword = hasher.HashPassword(null, User.UserPassword);
 
+
+
         if (string.IsNullOrEmpty(hashedPassword))
         {
-            return StatusCode(500, "An unexpected server error occurred.");
+            return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.", 500, "Creating Incription for pass word"));
 
         }
 
@@ -89,7 +100,7 @@ public class EcommerceController : ControllerBase
         if (!Responce)
         {
 
-            return StatusCode(500, "An unexpected server error occurred.");
+             return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.", 500, "Creating Incription for pass word"));
 
         }
 
@@ -190,13 +201,12 @@ public class EcommerceController : ControllerBase
             }
             catch (Exception ex)
             {
-                Console.WriteLine("\n\nError :\n" + ex);
-                return StatusCode(500, "We could not send an email verfication link pleas reSign.");
-
+  
+                return StatusCode(500, new DTOGeneralResponse("We could not send an email verfication link pleas reSign.", 500, "Email integration"));
 
             }
 
-            return Ok("Please Verify you email,\n...if thier is no verfication message please sign up again");
+            return Ok(new DTOGeneralResponse("Please Verify you email,\n...if thier is no verfication message please sign up again", 200, "none"));
 
 
         }
@@ -206,7 +216,7 @@ public class EcommerceController : ControllerBase
             await clsPerson.Delete(NewCustomer.PersonID);
             NewCustomer = null;
 
-            return StatusCode(500, "An unexpected server error occurred.");
+            return StatusCode(500, new DTOGeneralResponse("We could not send an email verfication link pleas reSign.", 500, "Internal email handling"));
 
 
 
@@ -216,22 +226,33 @@ public class EcommerceController : ControllerBase
     }
 
 
+
     [HttpPost("LogIn", Name = "LogIn")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<bool>> LogIn([FromBody] DTOUser User)
     {
-        if (User == null) { return BadRequest("Invalaid User information"); }
-        if (string.IsNullOrEmpty(User.UserName)) { return BadRequest("Invalaid User information(Name)"); }
-        if (string.IsNullOrEmpty(User.UserPassword)) { return BadRequest("Invalaid User information(PassWord) "); }
+        if (User == null) {
+            return BadRequest( new DTOGeneralResponse("Invalaid User information", 400, "null data"));
+
+        }
+        if (string.IsNullOrEmpty(User.UserName))
+        {
+
+            return BadRequest(new DTOGeneralResponse("Invalaid User information(Name)", 400, "null data"));
+        }
+         if (string.IsNullOrEmpty(User.UserPassword)) {
+
+
+            return BadRequest(new DTOGeneralResponse("Invalaid User information(PassWord) ", 400, "null data")); }
 
         clsUser? ExsistedCustomer = await clsUser.Find(User.UserName);
 
         if (ExsistedCustomer == null)
         {
 
-            return BadRequest("User name or PassWord Are incorect");
+            return BadRequest(new DTOGeneralResponse("User name or PassWord Are incorect", 400, "null data"));
 
         }
       
@@ -241,13 +262,13 @@ public class EcommerceController : ControllerBase
 
         if (VerifyhashedPassword == PasswordVerificationResult.Failed)
         {
-            return BadRequest("User name or PassWord Are incorect");
+            return BadRequest(new DTOGeneralResponse("User name or PassWord Are incorect", 400, "null data"));
 
         }
 
         if (await clsValidatingEmail.Find(ExsistedCustomer.PersonID) != null)
         {
-            return BadRequest("An Account Without a verfied email, please check your email for a verfication link then log in again");
+            return BadRequest(new DTOGeneralResponse("An Account Without a verfied email, please check your email for a verfication link then log in again", 400, "null data"));
 
         }
 
@@ -261,21 +282,33 @@ public class EcommerceController : ControllerBase
         };
 
         var AthorizationToken = clsGlobale.GenerateJwtToken(ExsistedCustomer.DTOUser);
-        var GuidIDToken=clsGlobale.GenerateJwtToken(Guid.NewGuid());
-   
-        
-        if (!string.IsNullOrEmpty(AthorizationToken)&&!string.IsNullOrEmpty(GuidIDToken))
+        string? PaymentGUIDToken = "";
+        //check if the use does not have unfinshed payment 
+        if (await ExsistedCustomer.HasUnfinshedPayment())
+        {
+            //this is to make sure to prevent double payment  in any case 
+
+            Guid? UnfinshedPaymentGuid = await clsTransaction.GetUnfinshedPayment(ExsistedCustomer.UserID);
+            PaymentGUIDToken = clsGlobale.GenerateJwtToken(UnfinshedPaymentGuid.Value);
+        }
+        else
+        {
+            PaymentGUIDToken= clsGlobale.GenerateJwtToken(Guid.NewGuid());
+
+        }
+
+        if (!string.IsNullOrEmpty(AthorizationToken)&&!string.IsNullOrEmpty(PaymentGUIDToken))
         {
             Response.Cookies.Append("Authentication", AthorizationToken, cookieOptions);
-            Response.Cookies.Append("GuidID",GuidIDToken, cookieOptions);
+            Response.Cookies.Append("GuidID",PaymentGUIDToken, cookieOptions);
 
-            return Ok("LogIn seccessfuly");
+            return Ok(new DTOGeneralResponse("LogIn seccessfuly",200,"None"));
 
         }
 
         else
         {
-            return StatusCode(500, "An unexpected server error occurred.");
+            return StatusCode(500,new DTOGeneralResponse("An unexpected server error occurred.",500,"Create JWT"));
 
         }
 
@@ -291,7 +324,7 @@ public class EcommerceController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<bool>> IsUserNameFreeToUse([FromBody] string UserName)
     {
-        if (string.IsNullOrEmpty(UserName)) { return BadRequest("Invalaid User information(User Name)"); }
+        if (string.IsNullOrEmpty(UserName)) { return BadRequest(new DTOGeneralResponse("Invalaid User information(User Name)", 400, "null data")); }
         clsUser? IsUserIxsiste = await clsUser.Find(UserName);
         return Ok(IsUserIxsiste == null);
 
@@ -320,7 +353,7 @@ public class EcommerceController : ControllerBase
 
      
 
-           return Ok( new { Status = "Succeeded", Message = "LogOut done secsesfuly", ErrorType = "" });
+           return Ok( new DTOGeneralResponse("LogOut done secsesfully" ,200,"None"));
 
 
 
@@ -345,7 +378,7 @@ public class EcommerceController : ControllerBase
 
             if (UserID == null)
             {
-                return StatusCode(500, "An unexpected server error occurred.");
+                return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.",500,"Serch faileur"));
             }
 
             else
@@ -371,30 +404,33 @@ public class EcommerceController : ControllerBase
     }
 
 
-    [HttpPost("verify-email")]
+
+
+    [HttpPost("VERIFYEMAIL", Name = "VERIFYEMAIL")]
+
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> VerifyEmail([FromBody] string GUID_ID)
+    public async Task<ActionResult<DTOGeneralResponse>> VerifyEmail([FromBody] string GUID_ID)
     {
         clsValidatingEmail? validatingEmail = await clsValidatingEmail.Find(GUID_ID);
 
         if (validatingEmail == null)
         {
 
-            return BadRequest("Pleas Check if your account is active or  Sign up again ");
+            return BadRequest(new DTOGeneralResponse("Pleas Check if your account is active or  Sign up again ", 400, "Serch faileur"));
 
         }
 
-          clsUser? User = await clsUser.FindByPersonID(validatingEmail.PersonID);
+        clsUser? User = await clsUser.FindByPersonID(validatingEmail.PersonID);
 
-          if (User == null) { return StatusCode(500, "Un internale server error"); }
+        if (User == null) { return StatusCode(500, new DTOGeneralResponse("Un internale server error", 500, "Serch faileur")); }
 
         bool result = await clsValidatingEmail.Delete(validatingEmail.PersonID);
 
         if (!result)
         {
-            return StatusCode(500, "Unable to Acive the account and confirme the email");
+            return StatusCode(500, new DTOGeneralResponse("Unable to Acive the account and confirme the email", 500, "Deleting data Faileur"));
         }
 
         var cookieOptions = new CookieOptions
@@ -404,27 +440,24 @@ public class EcommerceController : ControllerBase
             SameSite = SameSiteMode.None, // Prevent CSRF attacks
             Expires = DateTime.UtcNow.AddHours(1) // Set expiration
         };
+
         string? AuthenticationToken = clsGlobale.GenerateJwtToken(User.DTOUser);
         string? GuidIdToken = clsGlobale.GenerateJwtToken(Guid.NewGuid());
-        if (!string.IsNullOrEmpty(AuthenticationToken)&&!string.IsNullOrEmpty(GuidIdToken))
+        if (!string.IsNullOrEmpty(AuthenticationToken) && !string.IsNullOrEmpty(GuidIdToken))
         {
             Response.Cookies.Append("Authentication", AuthenticationToken, cookieOptions);
             Response.Cookies.Append("GuidID", GuidIdToken, cookieOptions);
 
-            return Ok("Email verfied seccessfuly");
+            return Ok(new DTOGeneralResponse("Email Verfied secsessfuly", 200, "none"));
 
         }
 
         else
         {
-            return StatusCode(500, "An unexpected server error occurred.");
+            return StatusCode(500, new DTOGeneralResponse("An unexpected server error accurred.", 500, "Creating JWT faileur"));
 
         }
-        //
     }
-
-
-  
 
 
 

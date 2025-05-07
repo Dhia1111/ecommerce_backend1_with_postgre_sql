@@ -59,6 +59,12 @@ namespace BusinessLayer
              
          }
 
+        public async Task<bool> HasUnfinshedPayment()
+        {
+            bool result = ((await ConnectionLayer.clsTransaction.GetTransactionGuidIdFroUnfinshedPayment(this.UserID)) != Guid.Empty);
+
+            return result;
+        }
         public  async Task<List<DTOCartItem>?> Cart()
         {
             return await ConnectionLayer.clsCartItem.GetCart(this.UserID);  
