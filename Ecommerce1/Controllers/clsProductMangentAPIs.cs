@@ -469,13 +469,12 @@ public class clsProductMangentAPIs : ControllerBase
         }
 
         clsProduct? product = await clsProduct.Find(ProductID);
-
         if (product==null)
         {
             return BadRequest(new DTOGeneralResponse("the user did not be found ",400,"Saving failure"));
         }
 
- 
+        await clsProduct.Delete(ProductID);
 
         try
         {

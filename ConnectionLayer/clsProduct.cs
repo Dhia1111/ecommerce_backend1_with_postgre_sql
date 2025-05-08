@@ -426,6 +426,56 @@ namespace ConnectionLayer
         }
 
 
+        public static async Task<bool> DeleteAll()
+        {
+
+
+            string qery = @"Delete from ""Products"" ";
+
+
+            try
+            {
+                using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
+                {
+                    connection.Open();
+
+                    using (NpgsqlCommand command = new NpgsqlCommand(qery, connection))
+                    {
+
+
+
+                        int NumberRowAffected = await command.ExecuteNonQueryAsync();
+
+                        if (NumberRowAffected == 0)
+                        {
+
+                            return false;
+
+                        }
+
+
+                    }
+
+                }
+            }
+
+
+            catch
+            {
+
+                return false;
+            }
+
+
+
+
+            return true;
+
+        }
+
+
+
+
 
 
     }
