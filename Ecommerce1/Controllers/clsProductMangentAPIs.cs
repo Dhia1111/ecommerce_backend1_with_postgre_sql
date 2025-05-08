@@ -304,6 +304,7 @@ public class clsProductMangentAPIs : ControllerBase
 
         clsProduct? product = await clsProduct.Find(obj.Product.ID);
 
+
         if (product == null)
         {
             return BadRequest(new DTOGeneralResponse("thier is no product found ",400,"Saving failure"));
@@ -337,6 +338,12 @@ public class clsProductMangentAPIs : ControllerBase
             obj.Product.ImageName = Guid.NewGuid().ToString() ;
             try
             {
+                product.Name = obj.Product.Name;
+                product.ImageName = obj.Product.ImageName;
+                product.Price = obj.Product.Price;
+
+                result = await product.Save();
+
                 var deletionParams = new DeletionParams(product.GetImagePublicIDFormName())
                 {
                     ResourceType = ResourceType.Image,
@@ -470,6 +477,8 @@ public class clsProductMangentAPIs : ControllerBase
         {
             return BadRequest(new DTOGeneralResponse("the user did not be found ",400,"Saving failure"));
         }
+
+       await clsProduct.Delete(ProductID);
 
         var deletionParams = new DeletionParams(product.GetImagePublicIDFormName())
         {
