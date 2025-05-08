@@ -116,12 +116,7 @@ namespace BusinessLayer
 
         public static async Task<bool>Delete(int ID)
         {
-           
-            await ConnectionLayer.clsIncludedProducts.DeleteAll();
-            await  ConnectionLayer.clsTransaction.DeleteAll();
-            await ConnectionLayer.clsCartItem.DeleteAll();
-            await ConnectionLayer.clsCatygory.DeleteAll();
-            await ConnectionLayer.clsProduct.DeleteAll();
+     
 
             return await ConnectionLayer.clsProduct.Delete(ID);
 
