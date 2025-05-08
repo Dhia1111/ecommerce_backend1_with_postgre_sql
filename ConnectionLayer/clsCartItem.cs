@@ -363,7 +363,7 @@ namespace ConnectionLayer
         public static async Task<bool> Delete(int UserID,int ProductID)
         {
 
-            string qery = @"Delete from  ""CartItem""  where ""UserID""=@UserID and ""ProductID""=@ProductID";
+            string qery = @"Delete from  ""CartItems""  where ""UserID""=@UserID and ""ProductID""=@ProductID";
 
             try
             {
@@ -409,8 +409,8 @@ namespace ConnectionLayer
         public static async Task<bool> DeleteAll()
         {
 
-            string qery = @"Delete from  ""CartItem"" ";
-
+            string qery = @"Delete from  ""CartItems"" ";
+            
             try
             {
                 using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
