@@ -338,11 +338,7 @@ public class clsProductMangentAPIs : ControllerBase
             obj.Product.ImageName = Guid.NewGuid().ToString() ;
             try
             {
-                product.Name = obj.Product.Name;
-                product.ImageName = obj.Product.ImageName;
-                product.Price = obj.Product.Price;
-
-                result = await product.Save();
+                 
 
                 var deletionParams = new DeletionParams(product.GetImagePublicIDFormName())
                 {
@@ -478,16 +474,26 @@ public class clsProductMangentAPIs : ControllerBase
             return BadRequest(new DTOGeneralResponse("the user did not be found ",400,"Saving failure"));
         }
 
-       await clsProduct.Delete(ProductID);
+        await clsProduct.Delete(ProductID);
 
-        var deletionParams = new DeletionParams(product.GetImagePublicIDFormName())
+        try
         {
-            ResourceType = ResourceType.Image,
-            Invalidate = true // Optional: purge CDN cache
-        };
+            var deletionParams = new DeletionParams(product.GetImagePublicIDFormName())
+            {
+                ResourceType = ResourceType.Image,
+                Invalidate = true // Optional: purge CDN cache
+            };
 
-        var DeletionResult = await _cloudinary.DestroyAsync(deletionParams);
+            var VarDeletionResult = await _cloudinary.DestroyAsync(deletionParams);
 
+
+        }
+        catch(Exception ex)
+        {
+
+            return StatusCode(500, new DTOGeneralResponse($"Delete Image Error : {ex.Message}",500,"Not Set"));
+
+        }
 
         bool result= await product.ClearCatigories();
 

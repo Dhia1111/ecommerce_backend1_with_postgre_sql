@@ -156,21 +156,29 @@ namespace BusinessLayer
     
         public  string GetImagePublicIDFormName()
         {
-            string storedPath = this.ImageName;
-        
-            if (string.IsNullOrWhiteSpace(storedPath))
-                throw new ArgumentException("Stored path cannot be empty");
+            try
+            {
+                string storedPath = this.ImageName;
 
-            var parts = storedPath.Split('/');
+                if (string.IsNullOrWhiteSpace(storedPath))
+                    throw new ArgumentException("Stored path cannot be empty");
 
-            if (parts.Length < 2)
-                throw new ArgumentException("Invalid stored path format");
+                var parts = storedPath.Split('/');
 
-            var publicIdParts = parts
-                .Skip(1)
-                .Select(p => Path.GetFileNameWithoutExtension(p));
+                if (parts.Length < 2)
+                    throw new ArgumentException("Invalid stored path format");
 
-            return string.Join("/", publicIdParts);
+                var publicIdParts = parts
+                    .Skip(1)
+                    .Select(p => Path.GetFileNameWithoutExtension(p));
+
+                return string.Join("/", publicIdParts);
+            }
+            catch (Exception ex) { 
+            
+            
+                return string.Empty;
+            }
         
     }
     
