@@ -9,6 +9,8 @@ using System.Net;
 using Microsoft.Extensions.FileProviders;
 using Ecommerce1;
 using Stripe;
+using CloudinaryDotNet;
+using CloudinaryDotNet;
 
 
 
@@ -35,6 +37,15 @@ builder.Services.AddHttpClient("GeoClient", client => {
         ServerCertificateCustomValidationCallback = (msg, cert, chain, errors) => true
     });
 
+builder.Services.AddSingleton<Cloudinary>(sp =>
+{
+    var account = new CloudinaryDotNet.Account(
+        clsGlobale.GetCloudName(),
+        clsGlobale.GetAPI_KEY(),
+        clsGlobale.GetAPI_SECRET()
+    );
+    return new Cloudinary(account);
+});
 
 
 //builder.Services.AddAuthentication((option) =>

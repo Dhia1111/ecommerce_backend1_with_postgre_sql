@@ -152,5 +152,27 @@ namespace BusinessLayer
         {
            return await ConnectionLayer.clsCatygory.DeleteAllCatigories(this.ID);    
         }
+    
+    
+        public  string GetImagePublicIDFormName()
+        {
+            string storedPath = this.ImageName;
+        
+            if (string.IsNullOrWhiteSpace(storedPath))
+                throw new ArgumentException("Stored path cannot be empty");
+
+            var parts = storedPath.Split('/');
+
+            if (parts.Length < 2)
+                throw new ArgumentException("Invalid stored path format");
+
+            var publicIdParts = parts
+                .Skip(1)
+                .Select(p => Path.GetFileNameWithoutExtension(p));
+
+            return string.Join("/", publicIdParts);
+        
+    }
+    
     }
 }

@@ -223,11 +223,25 @@ namespace Ecommerce1
         }
         public static string GetgeonamesUserName() { return _configuration["geonamesUserName"]; }
 
- 
-  
+        public static string GetAPI_KEY()
+        {
+            return _configuration["API_KEY"];
+        }
+
+        public static string GetCloudName()
+        {
+            return _configuration["CloudName"];
+        }
+
+        public static string GetAPI_SECRET()
+        {
+            return _configuration["API_SECRET"];
+        }
 
 
-     
+
+
+
     }
 }
 

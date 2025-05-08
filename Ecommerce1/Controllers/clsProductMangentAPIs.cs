@@ -1,8 +1,11 @@
 ﻿
 namespace Ecommerce1.Controllers;
 using BusinessLayer;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using System.IO;
 using System.Net;
@@ -42,6 +45,12 @@ public class DTOAddProductRequest
 [ApiController]
 public class clsProductMangentAPIs : ControllerBase
 {
+    private readonly Cloudinary _cloudinary;
+ 
+    public clsProductMangentAPIs(Cloudinary cloudinary)
+    {
+        _cloudinary = cloudinary;
+    }
 
     [HttpPost("AddProduct")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -89,12 +98,12 @@ public class clsProductMangentAPIs : ControllerBase
 
         if(obj.Product == null)
         {
-            return BadRequest("Provied a valiad data the  Product   is empty");
+            return BadRequest(new DTOGeneralResponse("Provied a valiad data the  Product   is empty",400,"null Data"));
 
         }
         if (obj.CatigoriesList == null )
         {
-            return BadRequest("Provied a valiad data the  catigories list is empty");
+            return BadRequest(new DTOGeneralResponse("Provied a valiad data the  Product   is empty", 400, "null Data"));
         }
         if (obj.CatigoriesList.Count == 0)
         {
@@ -106,6 +115,8 @@ public class clsProductMangentAPIs : ControllerBase
         {
             return BadRequest(new DTOGeneralResponse("the Image is not valaid ",400,"null image "));
         }
+
+    
 
         var extension = Path.GetExtension(obj.Image.FileName).ToLowerInvariant();
 
@@ -137,22 +148,55 @@ public class clsProductMangentAPIs : ControllerBase
         }
 
 
-        string extention = clsGlobale.GetTheBestImageExtention();
 
 
-        obj.Product.ImageName = Guid.NewGuid().ToString() + extention;
-        var path = clsGlobale.GetLoadDiractory();
+    
 
-        if (!Directory.Exists(path))
+
+
+
+        obj.Product.ImageName = Guid.NewGuid().ToString() ;
+        try
         {
-            Directory.CreateDirectory(path);
+
+
+            // Upload to Cloudinary
+            var uploadParams = new ImageUploadParams
+            {
+                File = new FileDescription(clsGlobale.GetTheBestImageExtention(), obj.Image.OpenReadStream()),
+                PublicId = $"{obj.Product.ImageName}"
+            };
+
+            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+            if (uploadResult.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                // Extract version, GUID, and extension from Cloudinary URL
+                var uri = new Uri(uploadResult.SecureUrl.ToString());
+                var segments = uri.Segments;
+                var uploadIndex = Array.IndexOf(segments, "upload/") + 1;
+
+                if (segments.Length > uploadIndex + 1)
+                {
+                    var versionSegment = segments[uploadIndex].Trim('/');
+                    var fileSegment = segments[uploadIndex + 1].Trim('/');
+
+                    obj.Product.ImageName = $"{versionSegment}/{fileSegment}";
+                }
+
+                if (uploadResult.Error != null)
+                    return StatusCode(500, new DTOGeneralResponse($"{uploadResult.Error.Message}", 500, $"{uploadResult.Error.ToString()}"));
+
+            }
         }
-        path += obj.Product.ImageName ;
-        using (var stramer = new FileStream(path, FileMode.Create))
+        catch (Exception ex)
         {
-            await obj.Image.CopyToAsync(stramer);
+            return StatusCode(500, new DTOGeneralResponse($"Internal server error: {ex.Message}", 500, $"NotSet"));
         }
 
+
+    
+   
 
         clsProduct product = new clsProduct(obj.Product);
         result = await product.Save();
@@ -181,7 +225,7 @@ public class clsProductMangentAPIs : ControllerBase
             }
         }
 
-        return Ok(true);
+        return Ok(new DTOGeneralResponse("Product Added Secsessfuly",200,"none"));
     }
 
 
@@ -225,7 +269,7 @@ public class clsProductMangentAPIs : ControllerBase
         {
             return BadRequest(new DTOGeneralResponse("You need to log in ",400,"Athentication"));
         }
-        bool result;
+       bool result;
 
 
 
@@ -241,17 +285,6 @@ public class clsProductMangentAPIs : ControllerBase
         }
         //handle image and save it in the image file
 
-
-
-        if (obj.Image != null && obj.Image.Length == 0)
-        {
-            var extension = Path.GetExtension(obj.Image.FileName).ToLowerInvariant();
-
-            var permittedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp" };
-
-            if (!permittedExtensions.Contains(extension))
-                return BadRequest("Invalid file extension,pleas provied an image file");
-        }
 
      
         if (obj.Product.Price <= 0)
@@ -269,9 +302,6 @@ public class clsProductMangentAPIs : ControllerBase
         }
 
 
-
-
-
         clsProduct? product = await clsProduct.Find(obj.Product.ID);
 
         if (product == null)
@@ -286,45 +316,75 @@ public class clsProductMangentAPIs : ControllerBase
 
         }
 
+        string Bestextention = clsGlobale.GetTheBestImageExtention();
+
 
         if (obj.Image != null && obj.Image.Length != 0)
         {
-            string extention = clsGlobale.GetTheBestImageExtention();
+              var extension = Path.GetExtension(obj.Image.FileName).ToLowerInvariant();
+
+            var permittedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp" };
+
+            if (!permittedExtensions.Contains(extension))
+                return BadRequest(new DTOGeneralResponse("Invalid file extension,pleas provied an image file", 400, ""));
 
 
-            obj.Product.ImageName = Guid.NewGuid().ToString() + extention;
+
+
+
+
+
+            obj.Product.ImageName = Guid.NewGuid().ToString() ;
+            try
+            {
+                var deletionParams = new DeletionParams(product.GetImagePublicIDFormName())
+                {
+                    ResourceType = ResourceType.Image,
+                    Invalidate = true // Optional: purge CDN cache
+                };
+
+                var DeletionResult=   await _cloudinary.DestroyAsync(deletionParams);
+
+                var uploadParams = new ImageUploadParams
+                {
+                    File = new FileDescription(Bestextention, obj.Image.OpenReadStream()),
+                    PublicId = $"{obj.Product.ImageName}"
+                };
+
+                var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+                if (uploadResult.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    // Extract version, GUID, and extension from Cloudinary URL
+                    var uri = new Uri(uploadResult.SecureUrl.ToString());
+                    var segments = uri.Segments;
+                    var uploadIndex = Array.IndexOf(segments, "upload/") + 1;
+
+                    if (segments.Length > uploadIndex + 1)
+                    {
+                        var versionSegment = segments[uploadIndex].Trim('/');
+                        var fileSegment = segments[uploadIndex + 1].Trim('/');
+
+                        obj.Product.ImageName = $"{versionSegment}/{fileSegment}";
+                    }
+
+                    if (uploadResult.Error != null)
+                        return StatusCode(500, new DTOGeneralResponse($"{uploadResult.Error.Message}", 500, $"{uploadResult.Error.ToString()}"));
+
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new DTOGeneralResponse($"Internal server error: {ex.Message}", 500, $"NotSet"));
+            }
+
+            //??
         }
+
         else
         {
             obj.Product.ImageName = product.ImageName;
         }
-        var path = clsGlobale.GetLoadDiractory();
-
-
-
-        if (!Directory.Exists(path))
-        {
-            Directory.CreateDirectory(path);
-        }
-
-        //delete Old Image from folder
-
-        if (obj.Image != null && obj.Image.Length != 0)
-        {
-            if  (System.IO.File.Exists(path + product.ImageName))
-            {
-
-                System.IO.File.Delete(path + product.ImageName);
-            }
-            path += obj.Product.ImageName;
-         
-            
-            using (var stramer = new FileStream(path, FileMode.Create))
-            {
-                await obj.Image.CopyToAsync(stramer);
-            }
-        }
-       
 
 
        
@@ -359,7 +419,8 @@ public class clsProductMangentAPIs : ControllerBase
             }
         }
 
-        return Ok(result);
+        return Ok(new DTOGeneralResponse("Product Updated Secsessfuly",200,""));
+
     }
 
 
@@ -409,14 +470,17 @@ public class clsProductMangentAPIs : ControllerBase
         {
             return BadRequest(new DTOGeneralResponse("the user did not be found ",400,"Saving failure"));
         }
-        string path = clsGlobale.GetLoadDiractory()+product.ImageName;
-        if (System.IO.File.Exists(path))
-        {
-            System.IO.File.Delete(path);
-        }
-    
 
-       bool result= await product.ClearCatigories();
+        var deletionParams = new DeletionParams(product.GetImagePublicIDFormName())
+        {
+            ResourceType = ResourceType.Image,
+            Invalidate = true // Optional: purge CDN cache
+        };
+
+        var DeletionResult = await _cloudinary.DestroyAsync(deletionParams);
+
+
+        bool result= await product.ClearCatigories();
 
         product = null;
       result=  await clsProduct.Delete(ProductID);

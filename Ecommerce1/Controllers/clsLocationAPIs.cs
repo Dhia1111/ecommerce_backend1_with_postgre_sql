@@ -29,20 +29,6 @@ public class clsLocationAPIs : ControllerBase
         _httpClientFactory = clientFactory;
     }
 
-    [HttpGet("test-tls")]
-    public async Task<IActionResult> TestTls()
-    {
-        try
-        {
-            var client = _httpClientFactory.CreateClient("GeoClient");
-            var response = await client.GetAsync($"timezoneJSON?lat=47.01&lng=10.2&username={clsGlobale.GetgeonamesUserName()}");
-            return Ok(await response.Content.ReadAsStringAsync());
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, $"Connection failed: {ex.Message}");
-        }
-    } 
 
     [HttpGet("GetCounties")]
     [ProducesResponseType(StatusCodes.Status200OK)]
