@@ -474,7 +474,6 @@ public class clsProductMangentAPIs : ControllerBase
             return BadRequest(new DTOGeneralResponse("the user did not be found ",400,"Saving failure"));
         }
 
-        await clsProduct.Delete(ProductID);
 
         try
         {
@@ -494,6 +493,7 @@ public class clsProductMangentAPIs : ControllerBase
             return StatusCode(500, new DTOGeneralResponse($"Delete Image Error : {ex.Message}",500,"Not Set"));
 
         }
+
 
         bool result= await product.ClearCatigories();
 
