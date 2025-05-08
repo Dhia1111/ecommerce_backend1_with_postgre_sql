@@ -379,6 +379,7 @@ namespace ConnectionLayer
 
         public static async Task<bool> Delete(int ID)
         {
+             
 
             string qery = @"Delete from ""Products""  where ""ProductID""=@ProductID";
 

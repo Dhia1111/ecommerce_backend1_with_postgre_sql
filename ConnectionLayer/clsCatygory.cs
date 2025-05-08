@@ -442,6 +442,7 @@ namespace ConnectionLayer
 
         public static async Task<bool> DeleteAllCatigories(int ProductID)
         {
+            
 
             string qery = @"Delete from  ""CatigoriesManager""  where ""ProductID""=@ProductID";
 
