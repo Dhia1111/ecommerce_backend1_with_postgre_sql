@@ -161,7 +161,7 @@ public class clsLocationAPIs : ControllerBase
         try
         {
 
-            using var response = await client.GetAsync($"findNearbyPostalCodesJSON?placename={CityName}&country={countryCode}&maxRows=900&orderby=population&username={clsGlobale.GetgeonamesUserName()}");
+            using var response = await client.GetAsync($"postalCodeSearchJSON?placename={CityName}&country={countryCode}&maxRows=900&orderby=population&username={clsGlobale.GetgeonamesUserName()}");
 
             if (!response.IsSuccessStatusCode)
             {
