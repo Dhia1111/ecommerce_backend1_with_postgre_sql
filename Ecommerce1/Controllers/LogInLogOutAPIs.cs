@@ -166,7 +166,7 @@ public class EcommerceController : ControllerBase
             }}
         </style>
     </head>
-    <body>
+    <body
         <div class='email-container'>
             <h2>Welcome to DEPhone</h2>
             <p>Thank you for signing up! Please verify your email by clicking the button below:</p>
@@ -191,6 +191,7 @@ public class EcommerceController : ControllerBase
                     // make sure to create a valiad VerificationLink based on yor front end 
 
                     Body = emailbody,
+
 
                     IsBodyHtml = true,
                 };

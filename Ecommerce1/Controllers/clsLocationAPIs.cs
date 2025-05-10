@@ -54,9 +54,8 @@ public class clsLocationAPIs : ControllerBase
     {
 
         var client = _httpClientFactory.CreateClient("GeoClient");
-
-
-
+      
+        
         string? CountryCoude = await clsLocation.GetCountryCode(CountryName);
 
         if (CountryCoude == null)
@@ -162,7 +161,7 @@ public class clsLocationAPIs : ControllerBase
         try
         {
 
-            using var response = await client.GetAsync($"findNearbyPostalCodesJSON?placename={CityName}&country={countryCode}&maxRows=100&orderby=population&username={clsGlobale.GetgeonamesUserName()}");
+            using var response = await client.GetAsync($"findNearbyPostalCodesJSON?placename={CityName}&country={countryCode}&maxRows=900&orderby=population&username={clsGlobale.GetgeonamesUserName()}");
 
             if (!response.IsSuccessStatusCode)
             {

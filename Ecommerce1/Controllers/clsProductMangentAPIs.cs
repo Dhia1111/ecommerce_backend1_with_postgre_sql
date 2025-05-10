@@ -495,19 +495,27 @@ public class clsProductMangentAPIs : ControllerBase
         }
 
 
-        bool result= await product.ClearCatigories();
-
-        product = null;
-      result=  await clsProduct.Delete(ProductID);
-
-        if (!result)
+        if (product.IsIncludedIntransaction())
         {
 
-            return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.",500,"Deleting data failuer"));
+            bool result = await product.ClearCatigories();
+            product = null;
+            result = await clsProduct.Delete(ProductID);
 
 
+            if (!result)
+            {
+
+                return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.", 500, "Deleting data failuer"));
+
+
+            }
+            return Ok(true);
         }
-        return Ok(true);
+        else
+        {
+            return BadRequest( new DTOGeneralResponse("Delete failed : the Product is linked to a nother transaction  ",400,"harmfule request "));
+        }
     }
 
 

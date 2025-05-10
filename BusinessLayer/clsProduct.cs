@@ -75,6 +75,10 @@ namespace BusinessLayer
             return new clsProduct(p.ID,p.Name,p.Price,p.ImageName);
         }
 
+        public bool IsIncludedIntransaction()
+        {
+            return false;
+        }
         async Task<bool> _Add()
         {
 
@@ -116,7 +120,7 @@ namespace BusinessLayer
 
         public static async Task<bool>Delete(int ID)
         {
-     
+
 
             return await ConnectionLayer.clsProduct.Delete(ID);
 
