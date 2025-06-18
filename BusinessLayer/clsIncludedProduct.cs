@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BusinessLayer
 {
-    internal class clsIncludedProduct
+    public class clsIncludedProduct
     {
         enum enMode { Add, Update }
         enMode _Mode;
@@ -80,6 +80,10 @@ namespace BusinessLayer
 
         }
 
+        public static async Task<bool>DeleteAll(int TrasactionID)
+        {
+            return await ConnectionLayer.clsIncludedProducts.DeleteAll(TrasactionID);
+        }
         public static async Task<List<DTOIncludedProducts>?> GetAll()
         {
 
@@ -88,6 +92,10 @@ namespace BusinessLayer
         }
 
 
+        public static async Task<List<DTOIncludedProducts>?> GetAllIncludedProducts(int ID)
+        {
+            return await ConnectionLayer.clsIncludedProducts.FindAllForTransaction(ID);
+        }
      
 
     }

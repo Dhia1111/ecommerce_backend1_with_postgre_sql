@@ -14,13 +14,14 @@ namespace ConnectionLayer
 
         public static async Task<string?> GetCountryCode(string countryName)
         {
-            string query =@$"SELECT   ""CountryCode"" FROM ""Countries"" WHERE ""CountryName"" = @CountryName LIMIT 1";
+            string query =@$"SELECT   ""CountryCode"" FROM ""Countries"" WHERE ""CountryName"" = @CountryName LIMIT @LIMIT";
             string? countryCode = "";
 
             using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
             using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
             {
                 command.Parameters.AddWithValue("@CountryName", countryName);
+                command.Parameters.AddWithValue("@LIMIT", 1);
 
                 try
                 {
@@ -58,17 +59,61 @@ namespace ConnectionLayer
                 try
                 {
                     connection.Open();
-                    using (NpgsqlDataReader Reader =await command.ExecuteReaderAsync()) {
+                    using (NpgsqlDataReader Reader = await command.ExecuteReaderAsync())
+                    {
 
-                        while (Reader.Read()) {
-                            if (Reader["CountryName"] != null) {
+                        while (Reader.Read())
+                        {
+                            if (Reader["CountryName"] != null)
+                            {
                                 Countries.Add((Reader["CountryName"].ToString()));
-                            
+
                             }
                         }
-                    
+
                     }
-            
+
+                }
+                catch (Exception ex)
+                {
+                    // Handle exception or rethrow
+                    Console.WriteLine($"Error: {ex.Message}");
+                    return null;
+                }
+            }
+
+            return Countries;
+        }
+
+
+
+        public static async Task<List<string>?> GetAllCurencies()
+        {
+            string query = @$"SELECT ""CurencyCode"" FROM ""Curenices""";
+
+            List<string> Countries = new List<string>();
+
+            using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
+            using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
+            {
+
+                try
+                {
+                    connection.Open();
+                    using (NpgsqlDataReader Reader = await command.ExecuteReaderAsync())
+                    {
+
+                        while (Reader.Read())
+                        {
+                            if (Reader["CountryName"] != null)
+                            {
+                                Countries.Add((Reader["CountryName"].ToString()));
+
+                            }
+                        }
+
+                    }
+
                 }
                 catch (Exception ex)
                 {

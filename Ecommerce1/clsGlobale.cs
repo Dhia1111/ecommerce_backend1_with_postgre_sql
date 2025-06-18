@@ -24,12 +24,16 @@ namespace Ecommerce1
             _configuration = builder.Build();
         }
 
-        // Method to retrieve values
         public static string GetJwtSecret()
         {
             return _configuration["JWT_SECRET"];
         }
-      
+        public static string GetCurrencyExChangeAPI()
+        {
+            return _configuration["CurrencyExChangeAPI"];
+        }
+
+
         public static string GetTheBestImageExtention()
         {
             return _configuration["BestImageExtension"];

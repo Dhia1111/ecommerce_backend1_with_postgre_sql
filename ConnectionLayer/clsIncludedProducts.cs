@@ -101,6 +101,81 @@ namespace ConnectionLayer
 
         }
 
+        public static async Task<List<DTOIncludedProducts>?> FindAllForTransaction(int ID)
+        {
+
+            List<DTOIncludedProducts> IncludedProductsInTransaction =new List<DTOIncludedProducts>();
+
+            string qery = @"select * From ""IncludedProducts"" where ""TransactionID""=@TransactionID";
+
+
+            try
+            {
+                using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
+                {
+                    connection.Open();
+
+                    using (NpgsqlCommand command = new NpgsqlCommand(qery, connection))
+                    {
+
+                        command.Parameters.AddWithValue("@TransactionID", ID);
+
+
+                        using (NpgsqlDataReader Reader = await command.ExecuteReaderAsync())
+                        {
+
+                            while (Reader.Read())
+                            {
+
+
+                                DTOIncludedProducts IncludedProduct = new DTOIncludedProducts(-1, -1, -1, 0);
+
+                                if (int.TryParse(Reader["IncludedProdectID"].ToString(), out int IncludedProductID) &&
+                                    int.TryParse(Reader["TransactionID"].ToString(), out int TransactionID) &&
+                                    int.TryParse(Reader["ProductID"].ToString(), out int ProductID) &&
+                                     int.TryParse(Reader["NumberOfProducts"].ToString(), out int NumberOfProducts))
+
+                                {
+
+                                    IncludedProduct.TransactionID = TransactionID;
+                                    IncludedProduct.ProductID = ProductID;
+                                    IncludedProduct.ID = IncludedProductID;
+                                    IncludedProduct.NumberOfProduct = (uint)NumberOfProducts;
+
+
+
+                                    IncludedProductsInTransaction.Add(IncludedProduct);
+                                }
+
+
+
+
+
+
+                            }
+
+                        }
+
+
+                    }
+
+                }
+            }
+
+
+            catch
+            {
+
+                return null;
+            }
+
+
+           return IncludedProductsInTransaction;
+
+
+
+        }
+
         public static async Task<List<DTOIncludedProducts>?> GetAll()
         {
             string qery = @"Select*From ""IncludedProducts"" ";
@@ -371,6 +446,113 @@ namespace ConnectionLayer
             return true;
 
         }
+
+        public static async Task<bool> DeleteAll(int TransactionID)
+        {
+
+            string qery = @"Delete from  ""IncludedProducts"" where ""TransactionID"" =@TransactionID";
+
+       
+
+            try
+            {
+                using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
+                {
+                    connection.Open();
+
+                    using (NpgsqlCommand command = new NpgsqlCommand(qery, connection))
+                    {
+                        command.Parameters.AddWithValue("@TransactionID", TransactionID);
+
+
+
+                        int NumberRowAffected = await command.ExecuteNonQueryAsync();
+
+                        if (NumberRowAffected == 0)
+                        {
+
+                            return false;
+
+                        }
+
+
+                    }
+
+                }
+            }
+
+
+            catch(Exception e)
+            {
+
+                return false;
+            }
+
+
+
+
+            return true;
+
+        }
+
+        public static async Task<bool> IsProductIncludedInTransaction(int ProductID)
+
+        {
+
+            string qery = @" SELECT ""IncludedProdectID""	FROM ""IncludedProducts"" where  ""ProductID""=@ProductID  LIMIT @LIMIT";
+
+
+            try
+            {
+                using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
+                {
+                    connection.Open();
+
+                    using (NpgsqlCommand command = new NpgsqlCommand(qery, connection))
+                    {
+
+                        command.Parameters.AddWithValue("@ProductID", ProductID);
+                        command.Parameters.AddWithValue("@LIMIT", 1);
+
+
+                        object objID = await command.ExecuteScalarAsync();
+
+                        if (objID != null)
+                        {
+
+                            if (int.TryParse(objID.ToString(), out int ID))
+                            {
+                                return true;
+                            }
+                            else
+                            {
+                                return false;
+                            }
+
+                        }
+
+
+                    }
+
+                }
+            }
+
+
+            catch
+            {
+
+                return false;
+            }
+
+
+
+
+            return false;
+
+        }
+
+
+
 
     }
 }

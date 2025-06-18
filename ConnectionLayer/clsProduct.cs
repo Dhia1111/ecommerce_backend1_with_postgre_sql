@@ -11,7 +11,8 @@ public class DTOProduct {
 
     public string Name { get; set; }
 
-    public decimal Price { get; set; }
+    public decimal BasePriceInUSD { get; set; }
+    public decimal PriceInCurentCurrency { get; set; }
 
 
     public string? ImageName { get; set; }
@@ -22,7 +23,7 @@ public class DTOProduct {
     {
         this.ID = ID;
         this.Name = Name;
-        this.Price = Price;
+        this.BasePriceInUSD = Price;
         this.ImageName = Imagepath;
         this.ImageUrl =ImageUrl;
         {
@@ -35,7 +36,7 @@ public class DTOProduct {
 
         this.ID = -1;
         this.Name = "";
-        this.Price = 0;
+        this.BasePriceInUSD = 0;
         this.ImageName = "";
         this.ImageUrl = "";
         this.Catigories =new List<DTOCatygory.enCatigories>(10);
@@ -89,7 +90,7 @@ namespace ConnectionLayer
                                 {
 
                                     Product.ID = ProductID;
-                                    Product.Price = Price;
+                                    Product.BasePriceInUSD = Price;
                                     Product.Name = Reader["ProductName"].ToString();
                                     Product.ImageName = Reader["ProductImagePath"].ToString();
                                  
@@ -158,7 +159,7 @@ namespace ConnectionLayer
                                 {
                                     DTOProduct Product = new DTOProduct(-1, "", 0, "");
                                     Product.ID = ProductID;
-                                    Product.Price = Price;
+                                    Product.BasePriceInUSD = Price;
                                     Product.Name = Reader["ProductName"].ToString();
                                     Product.ImageName = Reader["ProductImagePath"].ToString();
 
@@ -225,7 +226,7 @@ namespace ConnectionLayer
                                 {
                                     DTOProduct Product = new DTOProduct(-1, "", 0, "");
                                     Product.ID = ProductID;
-                                    Product.Price = Price;
+                                    Product.BasePriceInUSD = Price;
                                     Product.Name = Reader["ProductName"].ToString();
                                     Product.ImageName = Reader["ProductImagePath"].ToString();
 
@@ -278,7 +279,7 @@ namespace ConnectionLayer
                     using (NpgsqlCommand command = new NpgsqlCommand(qery, connection))
                     {
 
-                        command.Parameters.AddWithValue("@ProductPrice", Product.Price);
+                        command.Parameters.AddWithValue("@ProductPrice", Product.BasePriceInUSD);
                         command.Parameters.AddWithValue("@ProductImagePath", Product.ImageName);
                         command.Parameters.AddWithValue("@ProductName", Product.Name);
                       
@@ -342,7 +343,7 @@ namespace ConnectionLayer
                     using (NpgsqlCommand command = new NpgsqlCommand(qery, connection))
                     {
 
-                        command.Parameters.AddWithValue("@ProductPrice", Product.Price);
+                        command.Parameters.AddWithValue("@ProductPrice", Product.BasePriceInUSD);
                         command.Parameters.AddWithValue("@ProductImagePath", Product.ImageName);
                         command.Parameters.AddWithValue("@ProductName", Product.Name);
                         command.Parameters.AddWithValue("@ProductID", Product.ID);

@@ -10,8 +10,7 @@ using Microsoft.Extensions.FileProviders;
 using Ecommerce1;
 using Stripe;
 using CloudinaryDotNet;
-using CloudinaryDotNet;
-
+ 
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +23,7 @@ builder.Services.AddSwaggerGen();
 
 
 //set TSL configuration 
+
 builder.Services.AddHttpClient("GeoClient", client => { 
     client.BaseAddress = new Uri(clsGlobale.BaseGeoNameUrl());
     client.DefaultRequestHeaders.UserAgent.ParseAdd("MyApp/1.0");
@@ -36,6 +36,20 @@ builder.Services.AddHttpClient("GeoClient", client => {
         // For testing ONLY - remove in production
         ServerCertificateCustomValidationCallback = (msg, cert, chain, errors) => true
     });
+
+builder.Services.AddHttpClient("CurrencyExchange", client => {
+    client.BaseAddress = new Uri(clsGlobale.GetCurrencyExChangeAPI());
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("MyApp/1.0");
+
+})
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        SslProtocols = System.Security.Authentication.SslProtocols.Tls12
+                      | System.Security.Authentication.SslProtocols.Tls13,
+        // For testing ONLY - remove in production
+        ServerCertificateCustomValidationCallback = (msg, cert, chain, errors) => true
+    });
+
 
 builder.Services.AddSingleton<Cloudinary>(sp =>
 {
@@ -85,24 +99,11 @@ builder.Services.AddSingleton<Cloudinary>(sp =>
 
 
 
-//builder.Services.AddCors(options =>
-//{
-//    options.AddPolicy("AllowReactApp", policy =>
-//    {
-//        policy.WithOrigins("https://firstecommerceforntend.netlify.app")
-//              .AllowAnyHeader()
-//              .AllowAnyMethod()
-//              .AllowCredentials();
-
-//    });
-//});
-
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("https://bestphoneaccessories.netlify.app")
+        policy.WithOrigins("https://localhost:3000")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -110,6 +111,18 @@ builder.Services.AddCors(options =>
     });
 });
 
+
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("AllowReactApp", policy =>
+//    {
+//        policy.WithOrigins("https://bestphoneaccessories.netlify.app")
+//              .AllowAnyHeader()
+//              .AllowAnyMethod()
+//              .AllowCredentials();
+
+//    });
+//});
 
 
 builder.Services.AddControllers();

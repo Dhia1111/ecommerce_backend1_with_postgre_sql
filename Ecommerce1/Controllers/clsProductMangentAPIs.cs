@@ -1,4 +1,6 @@
 ﻿
+
+
 namespace Ecommerce1.Controllers;
 using BusinessLayer;
 using CloudinaryDotNet;
@@ -7,9 +9,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
-using System.IO;
-using System.Net;
 using static DTOCatygory;
+using System.Linq;
 
 public class DTOAddProductRequest
 {
@@ -17,10 +18,10 @@ public class DTOAddProductRequest
     public IFormFile? Image { get; set; }
     public string stcatigories { get; set; }
     // Properties to deserialize the JSON strings
-    public DTOProduct? Product { get;set; }
-    public  List<DTOCatygory.enCatigories>? CatigoriesList { get; set; }
+    public DTOProduct? Product { get; set; }
+    public List<DTOCatygory.enCatigories>? CatigoriesList { get; set; }
 
-    public DTOAddProductRequest(string stProduct, IFormFile image,string stcatigories)
+    public DTOAddProductRequest(string stProduct, IFormFile image, string stcatigories)
     {
         this.stProduct = stProduct;
         Image = image;
@@ -28,28 +29,29 @@ public class DTOAddProductRequest
 
 
     }
-    public DTOAddProductRequest( )
+    public DTOAddProductRequest()
     {
         this.stProduct = "";
-        
-        this.stcatigories ="";
+
+        this.stcatigories = "";
 
 
 
     }
 
 }
- 
+
 
 [Route("api/Ecommerce/ProductMangment")]
 [ApiController]
 public class clsProductMangentAPIs : ControllerBase
 {
     private readonly Cloudinary _cloudinary;
- 
-    public clsProductMangentAPIs(Cloudinary cloudinary)
+    private readonly IHttpClientFactory _httpClientFactory;
+    public clsProductMangentAPIs(Cloudinary cloudinary, IHttpClientFactory httpClientFactory)
     {
         _cloudinary = cloudinary;
+        _httpClientFactory = httpClientFactory;
     }
 
     [HttpPost("AddProduct")]
@@ -65,74 +67,72 @@ public class clsProductMangentAPIs : ControllerBase
 
             if (UserID == null)
             {
-                return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.",500,""));
+                return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.", 500, ""));
             }
 
             else
             {
-                clsUser? User =await clsUser.Find(UserID.Value);
+                clsUser? User = await clsUser.Find(UserID.Value);
 
-                if (User == null) return BadRequest( new DTOGeneralResponse("User Does not exsiste",400,"Serch faileur"));
+                if (User == null) return BadRequest(new DTOGeneralResponse("User Does not exsiste", 400, "Serch faileur"));
 
                 else
                 {
-                    if (!((((User.Atherization&(byte)DTOUser.enAtherizations.AddProduct)==(byte)DTOUser.enAtherizations.AddProduct)&&User.Role==DTOUser.enRole.User) || (User.Role == DTOUser.enRole.Admine)))
+                    if ((User.Role != DTOUser.enRole.Admine && !(User.IsAthorizedUser(DTOUser.enAtherizations.AddProduct))) || User.Role == DTOUser.enRole.Customer)
                     {
-
-                        return BadRequest(new DTOGeneralResponse("User is UnAthorized",400,"Atherization"));
-
+                        return BadRequest(new DTOGeneralResponse("Your not athorized", 400, "UnAthorized request"));
                     }
                 }
-                
+
             }
 
         }
         else
         {
-            return BadRequest(new DTOGeneralResponse("You need to log in ",400, "Authentication"));
+            return BadRequest(new DTOGeneralResponse("You need to log in ", 400, "Authentication"));
         }
 
         if (obj.stProduct != null) obj.Product = JsonConvert.DeserializeObject<DTOProduct>(obj.stProduct);
 
         if (obj.stcatigories != null) obj.CatigoriesList = JsonConvert.DeserializeObject<List<DTOCatygory.enCatigories>?>(obj.stcatigories);
 
-        if(obj.Product == null)
+        if (obj.Product == null)
         {
-            return BadRequest(new DTOGeneralResponse("Provied a valiad data the  Product   is empty",400,"null Data"));
+            return BadRequest(new DTOGeneralResponse("Provied a valiad data the  Product   is empty", 400, "null Data"));
 
         }
-        if (obj.CatigoriesList == null )
+        if (obj.CatigoriesList == null)
         {
             return BadRequest(new DTOGeneralResponse("Provied a valiad data the  Product   is empty", 400, "null Data"));
         }
         if (obj.CatigoriesList.Count == 0)
         {
-            return BadRequest(new DTOGeneralResponse("Provied a valiad data the  catigories list is empty",400,"Saving faileur"));
+            return BadRequest(new DTOGeneralResponse("Provied a valiad data the  catigories list is empty", 400, "Saving faileur"));
         }
         bool result = false;
         //handle image and save it in the image file
         if (obj.Image == null || obj.Image.Length == 0)
         {
-            return BadRequest(new DTOGeneralResponse("the Image is not valaid ",400,"null image "));
+            return BadRequest(new DTOGeneralResponse("the Image is not valaid ", 400, "null image "));
         }
 
-    
+
 
         var extension = Path.GetExtension(obj.Image.FileName).ToLowerInvariant();
 
         var permittedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp" };
 
         if (!permittedExtensions.Contains(extension))
-            return BadRequest(new DTOGeneralResponse("Invalid file extension,pleas provied an image file",400, "Bad file extention use( \".jpg\", \".jpeg\", \".png\", \".gif\", \".bmp\", \".webp\")"));
+            return BadRequest(new DTOGeneralResponse("Invalid file extension,pleas provied an image file", 400, "Bad file extention use( \".jpg\", \".jpeg\", \".png\", \".gif\", \".bmp\", \".webp\")"));
 
-        if (obj.Product.Price <= 0)
+        if (obj.Product.BasePriceInUSD <= 0)
         {
-            return BadRequest(new DTOGeneralResponse("the ProductPrice must be more the (0) ",400, "Saving failure"));
+            return BadRequest(new DTOGeneralResponse("the ProductPrice must be more the (0) ", 400, "Saving failure"));
 
 
         }
 
-        if (!clsValidation.IsValidDecimal(obj.Product.Price) )
+        if (!clsValidation.IsValidDecimal(obj.Product.BasePriceInUSD))
         {
             return BadRequest(new DTOGeneralResponse("the ProductPrice decimal part should be less then tow Numbers (2.22) not 2(.221) ", 400, "Saving failure"));
 
@@ -142,7 +142,7 @@ public class clsProductMangentAPIs : ControllerBase
 
         if (string.IsNullOrEmpty(obj.Product.Name))
         {
-            return BadRequest(new DTOGeneralResponse("the Product name is  anvalaid ",400,"Saving failure"));
+            return BadRequest(new DTOGeneralResponse("the Product name is  anvalaid ", 400, "Saving failure"));
 
 
         }
@@ -150,12 +150,12 @@ public class clsProductMangentAPIs : ControllerBase
 
 
 
-    
 
 
 
 
-        obj.Product.ImageName = Guid.NewGuid().ToString() ;
+
+        obj.Product.ImageName = Guid.NewGuid().ToString();
         try
         {
 
@@ -195,8 +195,8 @@ public class clsProductMangentAPIs : ControllerBase
         }
 
 
-    
-   
+
+
 
         clsProduct product = new clsProduct(obj.Product);
         result = await product.Save();
@@ -212,20 +212,20 @@ public class clsProductMangentAPIs : ControllerBase
 
 
 
-               
-
-
-                    await product.AddNewCatigory(c);
 
 
 
+                await product.AddNewCatigory(c);
 
-            
+
+
+
+
 
             }
         }
 
-        return Ok(new DTOGeneralResponse("Product Added Secsessfuly",200,"none"));
+        return Ok(new DTOGeneralResponse("Product Added Secsessfuly", 200, "none"));
     }
 
 
@@ -243,22 +243,20 @@ public class clsProductMangentAPIs : ControllerBase
 
             if (UserID == null)
             {
-                return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.",500,"Serch failure"));
+                return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.", 500, "Serch failure"));
             }
 
             else
             {
                 clsUser? User = await clsUser.Find(UserID.Value);
 
-                if (User == null) return BadRequest(new DTOGeneralResponse("User Does not exsiste",400,"Serch failure"));
+                if (User == null) return BadRequest(new DTOGeneralResponse("User Does not exsiste", 400, "Serch failure"));
 
                 else
                 {
-                    if (!((((User.Atherization & (byte)DTOUser.enAtherizations.UpdateProduct) == (byte)DTOUser.enAtherizations.UpdateProduct) && User.Role == DTOUser.enRole.User) || (User.Role == DTOUser.enRole.Admine)))
+                    if ((User.Role != DTOUser.enRole.Admine && !(User.IsAthorizedUser(DTOUser.enAtherizations.UpdateProduct))) || User.Role == DTOUser.enRole.Customer)
                     {
-
-                        return BadRequest(new DTOGeneralResponse("User is UnAthorized",400,"Athorization"));
-
+                        return BadRequest(new DTOGeneralResponse("Your not athorized", 400, "UnAthorized request"));
                     }
                 }
 
@@ -267,9 +265,9 @@ public class clsProductMangentAPIs : ControllerBase
         }
         else
         {
-            return BadRequest(new DTOGeneralResponse("You need to log in ",400,"Athentication"));
+            return BadRequest(new DTOGeneralResponse("You need to log in ", 400, "Athentication"));
         }
-       bool result;
+        bool result;
 
 
 
@@ -277,24 +275,24 @@ public class clsProductMangentAPIs : ControllerBase
 
         if (obj.stcatigories != null) obj.CatigoriesList = JsonConvert.DeserializeObject<List<DTOCatygory.enCatigories>?>(obj.stcatigories);
 
-        if (obj.CatigoriesList == null || obj.CatigoriesList.Count == 0) return BadRequest(new DTOGeneralResponse("you need to provied Catigories",400,"Saving failure"));
-    
+        if (obj.CatigoriesList == null || obj.CatigoriesList.Count == 0) return BadRequest(new DTOGeneralResponse("you need to provied Catigories", 400, "Saving failure"));
+
         if (obj.Product == null)
         {
-            return BadRequest(new DTOGeneralResponse("You need to provied product information : price, name... ",400,"Saving failure"));
+            return BadRequest(new DTOGeneralResponse("You need to provied product information : price, name... ", 400, "Saving failure"));
         }
         //handle image and save it in the image file
 
 
-     
-        if (obj.Product.Price <= 0)
+
+        if (obj.Product.BasePriceInUSD <= 0)
         {
-            return BadRequest(new  DTOGeneralResponse("the ProductPrice must be more the (0) ",400,"Saving failure"));
+            return BadRequest(new DTOGeneralResponse("the ProductPrice must be more the (0) ", 400, "Saving failure"));
 
 
         }
 
-        if (!clsValidation.IsValidDecimal(obj.Product.Price))
+        if (!clsValidation.IsValidDecimal(obj.Product.BasePriceInUSD))
         {
             return BadRequest(new DTOGeneralResponse("the ProductPrice decimal part should be less then tow Numbers (2.22) not 2(.221) ", 400, "Saving failure"));
 
@@ -307,12 +305,12 @@ public class clsProductMangentAPIs : ControllerBase
 
         if (product == null)
         {
-            return BadRequest(new DTOGeneralResponse("thier is no product found ",400,"Saving failure"));
+            return BadRequest(new DTOGeneralResponse("thier is no product found ", 400, "Saving failure"));
         }
 
         if (string.IsNullOrEmpty(obj.Product.Name))
         {
-            return BadRequest(new DTOGeneralResponse("the Product Name is not valaid ",400,"Saving failure"));
+            return BadRequest(new DTOGeneralResponse("the Product Name is not valaid ", 400, "Saving failure"));
 
 
         }
@@ -322,7 +320,7 @@ public class clsProductMangentAPIs : ControllerBase
 
         if (obj.Image != null && obj.Image.Length != 0)
         {
-              var extension = Path.GetExtension(obj.Image.FileName).ToLowerInvariant();
+            var extension = Path.GetExtension(obj.Image.FileName).ToLowerInvariant();
 
             var permittedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp" };
 
@@ -335,10 +333,10 @@ public class clsProductMangentAPIs : ControllerBase
 
 
 
-            obj.Product.ImageName = Guid.NewGuid().ToString() ;
+            obj.Product.ImageName = Guid.NewGuid().ToString();
             try
             {
-                 
+
 
                 var deletionParams = new DeletionParams(product.GetImagePublicIDFormName())
                 {
@@ -346,7 +344,7 @@ public class clsProductMangentAPIs : ControllerBase
                     Invalidate = true // Optional: purge CDN cache
                 };
 
-                var DeletionResult=   await _cloudinary.DestroyAsync(deletionParams);
+                var DeletionResult = await _cloudinary.DestroyAsync(deletionParams);
 
                 var uploadParams = new ImageUploadParams
                 {
@@ -390,18 +388,18 @@ public class clsProductMangentAPIs : ControllerBase
         }
 
 
-       
+
         product.Name = obj.Product.Name;
         product.ImageName = obj.Product.ImageName;
-        product.Price = obj.Product.Price;
+        product.Price = obj.Product.BasePriceInUSD;
 
         result = await product.Save();
 
         //handle Catigories
-        if (result&&obj.CatigoriesList!=null)
+        if (result && obj.CatigoriesList != null)
         {
 
-         await   product.ClearCatigories();
+            await product.ClearCatigories();
 
             foreach (DTOCatygory.enCatigories c in obj.CatigoriesList)
             {
@@ -422,17 +420,17 @@ public class clsProductMangentAPIs : ControllerBase
             }
         }
 
-        return Ok(new DTOGeneralResponse("Product Updated Secsessfuly",200,""));
+        return Ok(new DTOGeneralResponse("Product Updated Secsessfuly", 200, ""));
 
     }
 
 
-    [HttpPost("DeleteProduct")]
+    [HttpDelete("DeleteProduct/{ProductID}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
 
-    public async Task<ActionResult<bool>> DeleteProduct([FromBody] int ProductID)
+    public async Task<ActionResult<bool>> DeleteProduct(int ProductID)
     {
 
         if (Request.Cookies.TryGetValue("Authentication", out string token))
@@ -441,21 +439,116 @@ public class clsProductMangentAPIs : ControllerBase
 
             if (UserID == null)
             {
-                return BadRequest( new DTOGeneralResponse("LogIn again ",400,"Parsing failure"));
+                return BadRequest(new DTOGeneralResponse("LogIn again ", 400, "Parsing failure"));
             }
 
             else
             {
                 clsUser? User = await clsUser.Find(UserID.Value);
 
-                if (User == null) return BadRequest(new DTOGeneralResponse("User Does not exsiste",400,"Serch failure"));
+                if (User == null) return BadRequest(new DTOGeneralResponse("User Does not exsiste", 400, "Serch failure"));
 
                 else
                 {
-                    if (!((((User.Atherization & (byte)DTOUser.enAtherizations.DeleteProduct) == (byte)DTOUser.enAtherizations.DeleteProduct) && User.Role == DTOUser.enRole.User) || (User.Role == DTOUser.enRole.Admine)))
+                    if ((User.Role != DTOUser.enRole.Admine && !(User.IsAthorizedUser(DTOUser.enAtherizations.DeleteProduct))) || User.Role == DTOUser.enRole.Customer)
+                    {
+                        return BadRequest(new DTOGeneralResponse("Your not athorized", 400, "UnAthorized request"));
+                    }
+                }
+
+            }
+
+        }
+
+        else
+        {
+            return BadRequest(new DTOGeneralResponse("You need to log in ", 400, "Authentication"));
+        }
+
+
+        clsProduct? product = await clsProduct.Find(ProductID);
+
+
+        if (product == null)
+        {
+            return BadRequest(new DTOGeneralResponse("the product did not be found ", 400, "serch failure"));
+        }
+        if (!await product.IsIncludedIntransaction())
+        {
+
+            bool result = await product.ClearCatigories();
+            result = await clsProduct.Delete(ProductID);
+
+            if (!result)
+            {
+
+                return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.", 500, "Deleting data failuer"));
+
+
+            }
+
+            try
+            {
+                var deletionParams = new DeletionParams(product.GetImagePublicIDFormName())
+                {
+                    ResourceType = ResourceType.Image,
+                    Invalidate = true // Optional: purge CDN cache
+                };
+
+                var VarDeletionResult = await _cloudinary.DestroyAsync(deletionParams);
+
+
+            }
+            catch (Exception ex)
+            {
+
+                return StatusCode(500, new DTOGeneralResponse($"Delete Image Error : {ex.Message}", 500, "Not Set"));
+
+            }
+
+
+
+            return Ok(true);
+        }
+        else
+        {
+            return BadRequest(new DTOGeneralResponse("Delete failed : the Product is linked to a nother transaction  ", 400, "harmfule request "));
+        }
+
+
+    }
+
+    [HttpDelete("DeleteCatigoriesForProduct/{ProductID}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<bool>> DeleteCatigoriesForProduct(int ProductID)
+    {
+
+        if (Request.Cookies.TryGetValue("Authentication", out string token))
+        {
+            int? UserID = clsGlobale.ExtractUserIdFromToken(token);
+
+            if (UserID == null)
+            {
+                return BadRequest(new DTOGeneralResponse("LogIn again ", 400, "Parsing failure"));
+            }
+
+            else
+            {
+                clsUser? User = await clsUser.Find(UserID.Value);
+
+                if (User == null) return BadRequest(new DTOGeneralResponse("User Does not exsiste", 400, "Serch failure"));
+
+                else
+                {
+                    if ((User.Role != DTOUser.enRole.Admine && !(User.IsAthorizedUser(DTOUser.enAtherizations.ClearCatigoriesForAProduct))) || User.Role == DTOUser.enRole.Customer)
+                    {
+                        return BadRequest(new DTOGeneralResponse("Your not athorized", 400, "UnAthorized request"));
+                    }
                     {
 
-                        return BadRequest(new DTOGeneralResponse("User is UnAthorized",400,"Atherization "));
+                        return BadRequest(new DTOGeneralResponse("User is UnAthorized", 400, "Atherization "));
 
                     }
                 }
@@ -465,58 +558,33 @@ public class clsProductMangentAPIs : ControllerBase
         }
         else
         {
-            return BadRequest(new DTOGeneralResponse("You need to log in ",400, "Authentication"));
+            return BadRequest(new DTOGeneralResponse("You need to log in ", 400, "Authentication"));
         }
+
 
         clsProduct? product = await clsProduct.Find(ProductID);
-        if (product==null)
+        if (product == null)
         {
-            return BadRequest(new DTOGeneralResponse("the user did not be found ",400,"Saving failure"));
+            return BadRequest(new DTOGeneralResponse("the product did not be found ", 400, "serch failure"));
         }
 
+        bool result = await product.ClearCatigories();
+        product = null;
 
-        try
-        {
-            var deletionParams = new DeletionParams(product.GetImagePublicIDFormName())
-            {
-                ResourceType = ResourceType.Image,
-                Invalidate = true // Optional: purge CDN cache
-            };
-
-            var VarDeletionResult = await _cloudinary.DestroyAsync(deletionParams);
-
-
-        }
-        catch(Exception ex)
+        if (!result)
         {
 
-            return StatusCode(500, new DTOGeneralResponse($"Delete Image Error : {ex.Message}",500,"Not Set"));
+            return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.", 500, "Deleting data failuer"));
+
 
         }
 
 
-        if (product.IsIncludedIntransaction())
-        {
 
-            bool result = await product.ClearCatigories();
-            product = null;
-            result = await clsProduct.Delete(ProductID);
-
-
-            if (!result)
-            {
-
-                return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.", 500, "Deleting data failuer"));
-
-
-            }
-            return Ok(true);
-        }
-        else
-        {
-            return BadRequest( new DTOGeneralResponse("Delete failed : the Product is linked to a nother transaction  ",400,"harmfule request "));
-        }
+        return Ok(true);
     }
+
+
 
 
     [HttpGet("GetProduct/{ID}")]
@@ -525,6 +593,40 @@ public class clsProductMangentAPIs : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<List<DTOProduct>?>> GetProduct(int ID)
     {
+
+        if (Request.Cookies.TryGetValue("Authentication", out string token))
+        {
+            int? UserID = clsGlobale.ExtractUserIdFromToken(token);
+
+            if (UserID == null)
+            {
+                return BadRequest(new DTOGeneralResponse("LogIn again ", 400, "Parsing failure"));
+            }
+
+            else
+            {
+                clsUser? User = await clsUser.Find(UserID.Value);
+
+                if (User == null) return BadRequest(new DTOGeneralResponse("User Does not exsiste", 400, "Serch failure"));
+
+                else
+                {
+                    if ((User.Role != DTOUser.enRole.Admine && !(User.IsAthorizedUser(DTOUser.enAtherizations.GetProductDetails))) || User.Role == DTOUser.enRole.Customer)
+                    {
+                        return BadRequest(new DTOGeneralResponse("Your not athorized", 400, "UnAthorized request"));
+                    }
+                }
+
+            }
+
+        }
+
+        else
+        {
+            return BadRequest(new DTOGeneralResponse("You need to log in ", 400, "Authentication"));
+        }
+
+
         clsProduct? p = await clsProduct.Find(ID);
         if (p != null)
         {
@@ -532,18 +634,16 @@ public class clsProductMangentAPIs : ControllerBase
             await p.LoadProductCatigories();
             return Ok(p.DTOProduct);
         }
-        else return BadRequest(new DTOGeneralResponse("thier is no user with this ID",400,"Serch failure"));
+        else return BadRequest(new DTOGeneralResponse("thier is no user with this ID", 400, "Serch failure"));
 
     }
-
-
 
     [HttpGet("GetAllProducts")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<List<DTOProduct>?>> GetAllProducts()
-    
+
     {
         if (Request.Cookies.TryGetValue("Authentication", out string token))
         {
@@ -551,7 +651,7 @@ public class clsProductMangentAPIs : ControllerBase
 
             if (UserID == null)
             {
-                return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.",500,"Parsing failure"));
+                return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.", 500, "Parsing failure"));
             }
 
             else
@@ -562,10 +662,10 @@ public class clsProductMangentAPIs : ControllerBase
 
                 else
                 {
-                    if (!((((User.Atherization & (byte)DTOUser.enAtherizations.ShowProductList) == (byte)DTOUser.enAtherizations.ShowProductList) && User.Role == DTOUser.enRole.User) || (User.Role == DTOUser.enRole.Admine)))
+                    if ((!(User.Role == DTOUser.enRole.Admine) && !User.IsAthorizedUser(DTOUser.enAtherizations.ShowProductList)) || (User.Role == DTOUser.enRole.Customer))
                     {
 
-                        return BadRequest(new DTOGeneralResponse("User is an Athorized",400,"Atherization"));
+                        return BadRequest(new DTOGeneralResponse("User is an Athorized", 400, "Atherization"));
 
                     }
                 }
@@ -575,7 +675,7 @@ public class clsProductMangentAPIs : ControllerBase
         }
         else
         {
-            return BadRequest(new DTOGeneralResponse("You need to log in ",400,"Authentication"));
+            return BadRequest(new DTOGeneralResponse("You need to log in ", 400, "Authentication"));
         }
 
         List<DTOProduct>? list = await clsProduct.GetAll();
@@ -590,12 +690,10 @@ public class clsProductMangentAPIs : ControllerBase
             }
         }
 
-        
+
         return Ok(list);
 
     }
-
-
 
     [HttpGet("GetAllProductsForCatigory/{CatigoryID}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -610,7 +708,7 @@ public class clsProductMangentAPIs : ControllerBase
             foreach (DTOProduct p in list)
             {
 
-                p.ImageUrl = clsGlobale.SetImageURL(p.ImageName);
+                if (p != null) p.ImageUrl = clsGlobale.SetImageURL(p.ImageName);
 
             }
         }
@@ -621,13 +719,95 @@ public class clsProductMangentAPIs : ControllerBase
     }
 
 
-    [HttpGet("IsUserAtherized", Name = "IsUserAtherized")]
+
+
+    [HttpGet("GetAllProductsForFilter/{CatigoryID}/{Currency}/{MinPrice}/{MaxPrice}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<bool>> IsUserAtherized()
+    public async Task<ActionResult<List<DTOProduct>?>> GetAllProductsForFilter(DTOCatygory.enCatigories CatigoryID, string Currency, int? MinPrice, int? MaxPrice)
     {
-        //in this stage  i only let the type of operation is binary all or none 
-        //in the  futer i can update it to more roles and Atherization types 
+
+        string? objCurrencyExchange;
+        try
+        {
+
+            var Client = _httpClientFactory.CreateClient("CurrencyExchange");
+
+
+            using var response = await Client.GetAsync($"?base=usd");
+            if (!response.IsSuccessStatusCode)
+            {
+                return StatusCode(500, new DTOGeneralResponse(
+                 "Currency Exchange API returned an error status.",
+                (uint)response.StatusCode,
+                 "HttpError"
+            ));
+            }
+
+            objCurrencyExchange = (await response.Content.ReadFromJsonAsync<object>())?.ToString();
+
+        }
+        catch (Exception e)
+        {
+
+            return StatusCode(500, new DTOGeneralResponse("Currency Exchange inf not found ", 500, "serchFilaier"));
+        }
+
+
+        List<DTOProduct>? list = await clsProduct.GetAllProductForCatigory(CatigoryID);
+
+
+        List<KeyValuePair<string, float>> ListOfCurrencies = clsCurrency.GetCurrencyRates(objCurrencyExchange);
+
+        if (ListOfCurrencies == null)
+        {
+            return StatusCode(500, new DTOGeneralResponse("Parsing Failuer ", 500, ""));
+        }
+
+
+        float ExChangeRate = Currency.ToLower()=="usd"?1:clsCurrency.GetCurrencyExchange(Currency, ListOfCurrencies);
+
+
+        if (list != null)
+        {
+            //change price based on  Currency
+            foreach (DTOProduct product in list)
+            {
+
+                if (product != null) product.ImageUrl = clsGlobale.SetImageURL(product.ImageName);
+
+                product.PriceInCurentCurrency = (decimal)(float.Parse(product.BasePriceInUSD.ToString()) * ExChangeRate);
+
+
+            }
+
+            //change price based on Min Max
+
+            if (MinPrice != null) list = list.Where(p => p.PriceInCurentCurrency >= MinPrice).ToList<DTOProduct>();
+            if (MaxPrice != null) list = list.Where(p => p.PriceInCurentCurrency <= MaxPrice).ToList<DTOProduct>();
+
+        }
+
+
+        return Ok(list);
+
+    }
+
+
+
+
+
+    [HttpGet("IsUserAtherized/{Athorization}", Name = "IsUserAtherized")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(StatusCodes.Status405MethodNotAllowed)]
+    public async Task<ActionResult<bool>> IsUserAtherized(int Athorization)
+    {
+        DTOUser.enAtherizations atherization;
+
+
+
+
 
         if (Request.Cookies.TryGetValue("Authentication", out string token))
         {
@@ -635,7 +815,7 @@ public class clsProductMangentAPIs : ControllerBase
 
             if (UserID == null)
             {
-                return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.",500,"Parsing failure"));
+                return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.", 500, "Parsing failure"));
             }
 
             else
@@ -643,27 +823,62 @@ public class clsProductMangentAPIs : ControllerBase
                 clsUser? user = await clsUser.Find(UserID.Value);
                 if (user != null)
                 {
-                    if (user.Role==DTOUser.enRole.Admine)
+                    //if the client send -1 he want to check if the User is an Admine or not 
+                    if (Athorization == -1)
                     {
-                        return Ok(true);
-
+                        if (user.Role == DTOUser.enRole.Admine)
+                        {
+                            return Ok(true);
+                        }
+                        else
+                        {
+                            return StatusCode(405, new DTOGeneralResponse("Not Athorized ", 405, "Athroiztion error"));
+                        }
                     }
+
+                    //any other number he want to check the user athorizations 
+
+                    else
+                    {
+                        try
+                        {
+                            atherization = (DTOUser.enAtherizations)Athorization;
+
+                            if (user.Role == DTOUser.enRole.Admine || user.IsAthorizedUser(atherization))
+                            {
+                                return Ok(true);
+
+                            }
+                            else
+                            {
+                                return StatusCode(405, new DTOGeneralResponse("Not Athorized ", 405, "Athroiztion error"));
+                            }
+
+
+                        }
+                        catch
+                        {
+                            return BadRequest(new DTOGeneralResponse("You need to send a valaid Athorization Type ", 400, "Parsing error"));
+
+                        }
+                    }
+
+
                 }
                 else
                 {
-                    
 
-                    return Ok(false);
+
+                    return StatusCode(405, new DTOGeneralResponse("Not Alowed", 405, "none"));
                 }
             }
         }
 
-        return Ok(false);
+
+        return StatusCode(405, new DTOGeneralResponse("Not Athorized ", 405, "Athroiztion error"));
 
 
     }
-
-
 
 
 }

@@ -29,11 +29,11 @@ namespace BusinessLayer
 
         public DTOUser.enRole Role { get; set; }
         
-        public byte Atherization { get { return 1; } set { value = 2; } }
+        public int Atherization { get; set; }
  
-        public DTOUser DTOUser { get { return new DTOUser(this._UserID,this.PersonID,this.Role,this.Atherization,this.UserName,this.PassWord,this._CreateAt.ToString()) ; } }
+        public DTOUser DTOUser { get { return new DTOUser(this._UserID, this.PersonID, this.Role, this.Atherization, this.UserName, this._CreateAt.ToString(), this.PassWord, this.Person.DTOperson); } }
 
-        DateTime _CreateAt { get {  return DateTime.Now ; } }
+        DateTime _CreateAt { get; set; }
 
          public clsUser(DTOUser User)
         {
@@ -43,10 +43,11 @@ namespace BusinessLayer
             this.Role = User.UserRole;
             this.Atherization = User.UserAtherization;
             _Mode = enMode.Add;
+            _CreateAt = DateTime.Now;
             _Person = new clsPerson(User.Person.FirstName, User.Person.LastName, User.Person.Email, User.Person.Phone, User.Person.Country, User.Person.City, User.Person.PostCodeAndLocation);
         }
 
-         clsUser(int ID, int PersonID, string UserName, string PassWord, byte Athorization , DTOUser.enRole Role,clsPerson Person)
+         clsUser(int ID, int PersonID, string UserName, string PassWord, int Athorization , DTOUser.enRole Role,clsPerson Person,DateTime CreatedAt)
         {
             _UserID = ID;
             this.PersonID = PersonID;
@@ -56,6 +57,7 @@ namespace BusinessLayer
             this.Atherization = Athorization;
             _Mode = enMode.Update;
             this._Person = Person;
+            _CreateAt = CreatedAt;
              
          }
 
@@ -82,7 +84,7 @@ namespace BusinessLayer
             if (user == null) {return null;}
             clsPerson? person = await clsPerson.Find(user.PersonID);
             if (person == null) return null;
-            return new clsUser(user.UserID, user.PersonID, user.UserName, user.UserPassword, user.UserAtherization, user.UserRole, person);
+            return new clsUser(user.UserID, user.PersonID, user.UserName, user.UserPassword, user.UserAtherization, user.UserRole, person,DateTime.Parse(user.CreatedAt));
         }
         public static async Task<clsUser?> FindByPersonID(int PersonID)
         {
@@ -91,7 +93,7 @@ namespace BusinessLayer
             if (user == null) { return null; }
             clsPerson? person = await clsPerson.Find(user.PersonID);
             if (person == null) return null;
-            return new clsUser(user.UserID, user.PersonID, user.UserName, user.UserPassword, user.UserAtherization, user.UserRole, person);
+            return new clsUser(user.UserID, user.PersonID, user.UserName, user.UserPassword, user.UserAtherization, user.UserRole, person, DateTime.Parse(user.CreatedAt));
         }
         public static async Task<clsUser?> Find(string UserName )
         {
@@ -100,9 +102,13 @@ namespace BusinessLayer
             if (user == null) { return null; }
             clsPerson? person = await clsPerson.Find(user.PersonID);
             if (person == null) return null;
-            return new clsUser(user.UserID, user.PersonID, user.UserName, user.UserPassword, user.UserAtherization, user.UserRole, person);
+            return new clsUser(user.UserID, user.PersonID, user.UserName, user.UserPassword, user.UserAtherization, user.UserRole, person, DateTime.Parse(user.CreatedAt));
         }
 
+        public static async Task<int> GetNumberOfAdmines()
+        {
+            return await ConnectionLayer.clsUser.GetNumberOfAdmines();
+        }
         bool CleanCustomerAthorization()
         {
 
@@ -158,7 +164,7 @@ namespace BusinessLayer
             return result;
         }
 
-        public async Task<bool> SaveAthorizedUser(int IssuerAdmineID)
+        public async Task<bool> SaveAthorizedUser()
         {
             //Valaidate Admine 
              
@@ -239,5 +245,16 @@ namespace BusinessLayer
         {
             return await ConnectionLayer.clsUser.Delete(ID);  
         }
+  
+
+    public  bool IsAthorizedUser(DTOUser.enAtherizations atherizationsType)
+        {
+            int AtherizationsType=(int)atherizationsType;
+         return (this.Role == DTOUser.enRole.AthorizedUser) && ((this.Atherization & AtherizationsType) == AtherizationsType);
+
+        }
+
+
+
     }
 } 

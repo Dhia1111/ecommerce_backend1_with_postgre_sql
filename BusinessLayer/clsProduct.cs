@@ -38,7 +38,7 @@ namespace BusinessLayer
             
                 this._ID = -1;
                 this.Name = p.Name;
-                this.Price = p.Price;
+                this.Price = p.BasePriceInUSD;
            if(p.ImageName!=null) this.ImageName = p.ImageName;
                 _Mode = enMode.Add;
             if(p.ImageUrl!=null)    this.ImageUrl = p.ImageUrl;
@@ -72,12 +72,13 @@ namespace BusinessLayer
         {
             DTOProduct? p= await ConnectionLayer.clsProduct.Find(ID);
             if(p==null)return null;
-            return new clsProduct(p.ID,p.Name,p.Price,p.ImageName);
+            return new clsProduct(p.ID,p.Name,p.BasePriceInUSD,p.ImageName);
         }
 
-        public bool IsIncludedIntransaction()
+        public async Task<bool> IsIncludedIntransaction()
         {
-            return false;
+
+            return await ConnectionLayer.clsIncludedProducts.IsProductIncludedInTransaction(this._ID);
         }
         async Task<bool> _Add()
         {
@@ -133,21 +134,15 @@ namespace BusinessLayer
 
         }
 
-
         public static async Task<List<DTOProduct>?> GetAllProductForCatigory(DTOCatygory.enCatigories c)
         {
-
             return await ConnectionLayer.clsProduct.GetAllForCatigory(c);
 
         }
 
-
-
-
-
-        public async Task LoadProductCatigories()
-        {
-            _Catigories=await ConnectionLayer.clsCatygory.GetAll(this.ID);
+         public async Task LoadProductCatigories()
+         {
+              _Catigories=await ConnectionLayer.clsCatygory.GetAll(this.ID);
 
      
 

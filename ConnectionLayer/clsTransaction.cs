@@ -47,7 +47,7 @@ namespace ConnectionLayer
         public static async Task<DTOTransaction?> Find(int ID)
         {
 
-
+            DTOTransaction Transaction=new DTOTransaction(-1,"",DTOTransaction.enState.Pending,0,-1,"",DateTime.Now);
             string qery = @"select * From ""Transactions"" where ""TransactionID""=@TransactionID";
 
             try
@@ -65,20 +65,16 @@ namespace ConnectionLayer
                         using (NpgsqlDataReader Reader = await command.ExecuteReaderAsync())
                         {
 
-                            if (Reader.Read())
+                 if(Reader.Read())     if (
+                                                int.TryParse(Reader["TransactionID"].ToString(), out int TransactionID) &&
+                                                byte.TryParse(Reader["TransactionState"].ToString(), out byte State) &&
+                                                decimal.TryParse(Reader["TransactionTotlePrice"].ToString(), out decimal TotolePrice) &&
+                                                int.TryParse(Reader["TransactionUserID"].ToString(), out int CustomerID) &&
+                                                Reader["TransactionPaymentMethodID"] != null &&
+                                                Reader["TransactionGUID"] != null &&
+                                                Reader["Date"] != null)
+
                             {
-                                 DTOTransaction Transaction = new DTOTransaction(-1, "", 0, 0, -1, "");
-
-                                if (
-                            int.TryParse(Reader["TransactionID"].ToString(), out int TransactionID) &&
-                            byte.TryParse(Reader["TransactionState"].ToString(), out byte State) &&
-                            byte.TryParse(Reader["TransactionAtherization"].ToString(), out byte Atherization) &&
-                            int.TryParse(Reader["TransactionTotolePrice"].ToString(), out int TotolePrice) &&
-                            int.TryParse(Reader["TransactionUserID"].ToString(), out int CustomerID) &&
-                            Reader["TransactionPaymentMethodID"] != null && Reader["TransactionGUID"] != null &&
-                            Reader["Date"] != null)
-
-                                {
 
                                     Transaction.ID = TransactionID;
                                     Transaction.PaymentMethodID = Reader["TransactionPaymentMethodID"].ToString();
@@ -99,7 +95,78 @@ namespace ConnectionLayer
                         }
 
 
+                    
+
+                }
+            }
+
+
+            catch
+            {
+
+                return null;
+            }
+
+
+            return null;
+
+
+
+        }
+  
+        public static async Task<DTOTransaction?> FindFirst(int UserID)
+        {
+
+            DTOTransaction Transaction = new DTOTransaction(-1, "", DTOTransaction.enState.Pending, 0, -1, "", DateTime.Now);
+            string qery = @"select * From ""Transactions""   where ""TransactionUserID""= @TransactionUserID   limit @Limit ";
+
+            try
+            {
+                using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
+                {
+                    connection.Open();
+
+                    using (NpgsqlCommand command = new NpgsqlCommand(qery, connection))
+                    {
+
+                        command.Parameters.AddWithValue("@TransactionUserID", UserID);
+                        command.Parameters.AddWithValue("@limit", 1);
+
+
+                        using (NpgsqlDataReader Reader = await command.ExecuteReaderAsync())
+                        {
+
+                            if (Reader.Read()) if (
+                                                           int.TryParse(Reader["TransactionID"].ToString(), out int TransactionID) &&
+                                                           byte.TryParse(Reader["TransactionState"].ToString(), out byte State) &&
+                                                           decimal.TryParse(Reader["TransactionTotlePrice"].ToString(), out decimal TotolePrice) &&
+                                                           int.TryParse(Reader["TransactionUserID"].ToString(), out int CustomerID) &&
+                                                           Reader["TransactionPaymentMethodID"] != null &&
+                                                           Reader["TransactionGUID"] != null &&
+                                                           Reader["Date"] != null)
+
+                                {
+
+                                    Transaction.ID = TransactionID;
+                                    Transaction.PaymentMethodID = Reader["TransactionPaymentMethodID"].ToString();
+                                    Transaction.State = (DTOTransaction.enState)State;
+                                    Transaction.TotolePrice = TotolePrice;
+                                    Transaction.CustomerID = CustomerID;
+                                    Transaction.TransactionGUID = Reader["TransactionGUID"].ToString();
+                                    Transaction.TransactionDate = Reader["Date"].ToString();
+                                    return Transaction;
+                                }
+
+
+
+
+
+                        }
+
                     }
+
+
+
 
                 }
             }
@@ -214,13 +281,14 @@ namespace ConnectionLayer
                                 if (
                                       int.TryParse(Reader["TransactionID"].ToString(), out int TransactionID) &&
                                       byte.TryParse(Reader["TransactionState"].ToString(), out byte State) &&
-                                      int.TryParse(Reader["TransactionTotolePrice"].ToString(), out int TotolePrice) &&
+                                      decimal.TryParse(Reader["TransactionTotlePrice"].ToString(), out decimal TotolePrice) &&
                                       int.TryParse(Reader["TransactionUserID"].ToString(), out int CustomerID) &&
                                       Reader["TransactionPaymentMethodID"] != null &&
-                                      Reader["TransactionGUID"] != null && Reader["Date"]!=null)
+                                      Reader["TransactionGUID"] != null && 
+                                      Reader["Date"]!=null)
 
                                 {
-                                    Transaction.Add(new DTOTransaction(TransactionID, Reader["TransactionPaymentMethodID"].ToString(), (DTOTransaction.enState)State,TotolePrice ,CustomerID, Reader["TransaactionGUID"].ToString(), DateTime.Parse(Reader["Date"].ToString())));
+                                    Transaction.Add(new DTOTransaction(TransactionID, Reader["TransactionPaymentMethodID"].ToString(), (DTOTransaction.enState)State,TotolePrice ,CustomerID, Reader["TransactionGUID"].ToString(), DateTime.Parse(Reader["Date"].ToString())));
 
                                 }
 
@@ -470,11 +538,58 @@ where ""TransactionD""=@TransactionID";
 
         }
 
+        public static async Task<bool> DeleteAll(int CustomerID)
+        {
+
+            string qery = @"Delete from ""Transactions"" where ""UserID""=@UserID ";
+
+
+            try
+            {
+                using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
+                {
+                    connection.Open();
+
+                    using (NpgsqlCommand command = new NpgsqlCommand(qery, connection))
+                    {
+
+                        command.Parameters.AddWithValue("@UserID", CustomerID);
+
+
+                        int NumberRowAffected = await command.ExecuteNonQueryAsync();
+
+                        if (NumberRowAffected == 0)
+                        {
+
+                            return false;
+
+                        }
+
+
+                    }
+
+                }
+            }
+
+
+            catch
+            {
+
+                return false;
+            }
+
+
+
+
+            return true;
+
+        }
+
         public static async Task<Guid> GetTransactionGuidIdFroUnfinshedPayment(int UserID)
 
         {
 
-            string qery = @" select  ""TransactionGUID""  from ""Transactions""  where ""TransactionUserID""=@TransactionUserID and ""TransactionState""=@TransactionState  LIMIT 1";
+            string qery = @" select  ""TransactionGUID""  from ""Transactions""  where ""TransactionUserID""=@TransactionUserID and ""TransactionState""=@TransactionState  LIMIT @LIMIT";
 
 
             try
@@ -487,6 +602,7 @@ where ""TransactionD""=@TransactionID";
                     {
 
                         command.Parameters.AddWithValue("@TransactionUserID", UserID);
+                        command.Parameters.AddWithValue("@LIMIT", 1);
                         command.Parameters.AddWithValue("@TransactionState", (int)DTOTransaction.enState.Pending);
 
 
@@ -527,7 +643,7 @@ where ""TransactionD""=@TransactionID";
         }
 
 
-
+    
     }
 
 

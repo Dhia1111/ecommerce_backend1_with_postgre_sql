@@ -1,4 +1,5 @@
-﻿using Npgsql;
+﻿using ConnectionLayer;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,9 +8,18 @@ using System.Threading.Tasks;
 
 public class DTOUser
 {
-    public enum enAtherizations { MakeTransaction = 1, AddUser = 2, UpdateUser = 4,  DeleteUsers = 8, DeleteHisAccount = 16,AddProduct=32,UpdateProduct=64,DeleteProduct=128,ShowProductList=254 }
-    public enum enRole { Admine = 1, Customer = 2, User = 3 }
+    public enum enAtherizations { 
+        
+        ShowUsersList= 2048, UpdateUser = 1, DeleteUsers = 2,SowUserDetails=1024,
 
+        ShowTransactionList = 4, DeleteTransaction = 8,ShowTransactionDetails=16,
+
+        AddProduct=32,UpdateProduct=64,DeleteProduct=128,ShowProductList=256, ClearCatigoriesForAProduct = 512,
+
+        GetProductDetails=4096
+    }
+   
+    public enum enRole { Admine = 1, Customer = 2, AthorizedUser = 3 }
 
     public int UserID { get; set; }
 
@@ -17,7 +27,7 @@ public class DTOUser
 
     public enRole UserRole { get; set; }
 
-    public byte UserAtherization { get; set; }
+    public int UserAtherization { get; set; }
 
     public string UserName {get;set;}
 
@@ -27,7 +37,7 @@ public class DTOUser
 
     public DTOPerson Person { get; set; }
 
-    public DTOUser(int UserID,int PersonID ,enRole UserRole, byte UserAtherization, string UserName, string UserPassword, string CreatedAt) {
+    public DTOUser(int UserID,int PersonID ,enRole UserRole, int UserAtherization, string UserName,  string CreatedAt,string UserPassword= "",DTOPerson PersonInf=null) {
         this.UserID = UserID;
         this.PersonID = PersonID;
        
@@ -36,7 +46,8 @@ public class DTOUser
         this.UserPassword = UserPassword;
         this.UserAtherization = UserAtherization;
         this.CreatedAt = CreatedAt;
-        this.Person = new DTOPerson(-1, "", "", "", "", "", "", "");
+        if (PersonInf == null) this.Person = new DTOPerson(-1, "", "", "", "", "", "", "");
+        else Person = PersonInf;
     }
 
 
@@ -93,7 +104,7 @@ namespace ConnectionLayer
                                 if ( int.TryParse(Reader["UserID"].ToString(), out int UserID) &&
                                      int.TryParse(Reader["PersonID"].ToString(), out int PersonID) &&
                                      byte.TryParse(Reader["UserRole"].ToString(), out byte UserRole) &&
-                                     byte.TryParse(Reader["UserAtherization"].ToString(), out byte UserAtherization) &&
+                                     int.TryParse(Reader["UserAtherization"].ToString(), out int UserAtherization) &&
                                      (Reader["UserName"] != null) &&
                                      (Reader["UserPassWord"] != null) &&
                                      (Reader["CreateAT"] != null )){
@@ -170,7 +181,7 @@ namespace ConnectionLayer
                                 if ((int.TryParse(Reader["UserID"].ToString(), out int UserID) &&
                                     int.TryParse(Reader["PersonID"].ToString(), out int PersonID) &&
                                     byte.TryParse(Reader["UserRole"].ToString(), out byte UserRole) &&
-                                     byte.TryParse(Reader["UserAtherization"].ToString(), out byte UserAtherization) &&
+                                     int.TryParse(Reader["UserAtherization"].ToString(), out int UserAtherization) &&
                                     Reader["UserName"] != null &&
                                     Reader["UserPassWord"] != null &&
                                     Reader["CreateAT"] != null))
@@ -248,7 +259,7 @@ namespace ConnectionLayer
                                 if ((int.TryParse(Reader["UserID"].ToString(), out int UserID) &&
                                     int.TryParse(Reader["PersonID"].ToString(), out int PersonID) &&
                                     byte.TryParse(Reader["UserRole"].ToString(), out byte UserRole) &&
-                                     byte.TryParse(Reader["UserAtherization"].ToString(), out byte UserAtherization) &&
+                                     int.TryParse(Reader["UserAtherization"].ToString(), out int UserAtherization) &&
                                     Reader["UserName"] != null &&
                                     Reader["UserPassWord"] != null &&
                                     Reader["CreateAT"] != null))
@@ -314,16 +325,18 @@ namespace ConnectionLayer
                         {
                             while (Reader.Read())
                             {
-                                if (!(int.TryParse(Reader["UserID"].ToString(), out int UserID) ||
-                                 int.TryParse(Reader["PersonID"].ToString(), out int PersonID) ||
-                                 byte.TryParse(Reader["UserRole"].ToString(), out byte UserRole) ||
-                                  byte.TryParse(Reader["PersonID"].ToString(), out byte UserAtherization) ||
-                                 Reader["UserName"] == null ||
-                                 Reader["UserPassWord"] == null ||
-                                 Reader["CreateAT"] == null))
-                                {
-                                 Users.Add(new DTOUser(UserID, PersonID, (DTOUser.enRole)UserRole, UserAtherization, Reader["UserName"].ToString(), Reader["UserPassWord"].ToString(), Reader["CreatedAt"].ToString()));
-                                }
+                                if (int.TryParse(Reader["UserID"].ToString(), out int UserID) &&
+                                 int.TryParse(Reader["PersonID"].ToString(), out int PersonID) &&
+                                 int.TryParse(Reader["UserRole"].ToString(), out int UserRole) &&
+                                 int.TryParse(Reader["UserAtherization"].ToString(), out int UserAtherization) &&
+                                 Reader["UserName"] != null &&
+                                  Reader["CreateAt"] != null)
+                                
+                                  {
+                                     
+                                   Users.Add(new DTOUser(UserID, PersonID, (DTOUser.enRole)UserRole, UserAtherization, Reader["UserName"].ToString(), Reader["CreateAt"].ToString(),"",await clsPerson.Find(PersonID)));
+                                  }
+                             
                                 else
                                 {
                                     continue;
@@ -429,7 +442,7 @@ namespace ConnectionLayer
               ""UserAtherization""=  @UserAtherization,
               ""UserName""=  @UserName,
               ""UserPassWord""=  @UserPassWord,
-              ""CreateAt""=  @CreateAt,
+              ""CreateAt""=  @CreateAt
     where         ""UserID""=@UserID";
 
 
@@ -445,10 +458,10 @@ namespace ConnectionLayer
                         command.Parameters.AddWithValue("@UserID", User.UserID);
                         command.Parameters.AddWithValue("@PersonID", User.PersonID);
                         command.Parameters.AddWithValue("@UserRole",(int) User.UserRole);
-                        command.Parameters.AddWithValue("@UserAtherization", User.UserAtherization);
+                        command.Parameters.AddWithValue("@UserAtherization", (int)User.UserAtherization);
                         command.Parameters.AddWithValue("@UserName", User.UserName);
-                        command.Parameters.AddWithValue("@UserPassWOrd", User.UserPassword);
-                        command.Parameters.AddWithValue("@CreateAt", User.CreatedAt);
+                        command.Parameters.AddWithValue("@UserPassWord", User.UserPassword);
+                        command.Parameters.AddWithValue("@CreateAt",DateTime.Parse(User.CreatedAt));
 
 
                         int NumberRowAffected = await command.ExecuteNonQueryAsync();
@@ -528,6 +541,66 @@ namespace ConnectionLayer
         }
 
 
+        public static async Task<int> GetNumberOfAdmines()
+        {
+            string qery = @"select Count(""UserID"") From ""Users"" where ""UserRole"" like @UserRole";
+
+
+            try
+            {
+                using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
+                {
+                    connection.Open();
+
+                    using (NpgsqlCommand command = new NpgsqlCommand(qery, connection))
+                    {
+
+                        command.Parameters.AddWithValue("@UserRole",((int)DTOUser.enRole.Admine).ToString());
+
+                        object? objNumberOfUsers = await command.ExecuteScalarAsync();
+                        {
+
+                            if (objNumberOfUsers!=null)
+                            {
+
+                                if(int.TryParse(objNumberOfUsers.ToString(),out int NumberOfUsers))
+                                {
+                                    return NumberOfUsers;
+                                }
+                                else
+                                {
+                                    return -1;
+                                }
+
+                               
+
+
+
+                            }
+                            else
+                            {
+                                return -1;
+                            }
+
+                        }
+
+
+                    }
+
+                }
+            }
+
+
+            catch
+            {
+
+                return -1;
+            }
+
+
+
+
+        }
 
 
     }

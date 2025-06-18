@@ -214,6 +214,28 @@ public class clsLocationAPIs : ControllerBase
     }
 
 
+    [HttpGet("AddressDataByIpAddress")]
+
+    public async Task<ActionResult> GetLocation()
+    {
+      //  var Address = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+
+    //    if (Address != null&&long.TryParse(Address.ToString(),out long Ip))
+      
+        {
+
+            long Ip = 34640896;
+
+            clsIP2Location? location = await clsIP2Location.FindByIpAddress(Ip);
+
+
+            return Ok(location?.DTO);
+        }
+      
+       // return BadRequest(new DTOGeneralResponse("the IP Address is not valaid ", 400, "Serch error"));
+
+    }
 
 }
 

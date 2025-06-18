@@ -100,7 +100,13 @@ namespace BusinessLayer
         {
             return await ConnectionLayer.clsTransaction.Delete(ID);
         }
-        public  async Task<bool> Save()
+
+        public static async Task<bool> DeleteAll(int CustomerID)
+        {
+            return await ConnectionLayer.clsTransaction.DeleteAll(CustomerID);
+        }
+
+        public async Task<bool> Save()
         {
             bool result = false;
             if (_Mode == enMode.Add)
@@ -123,6 +129,18 @@ namespace BusinessLayer
         public static async Task <clsTransaction?>Find(Guid Id)
         {
           DTOTransaction ?DTO= await  ConnectionLayer.clsTransaction.Find(Id);
+            return DTO != null ? new clsTransaction(DTO) : null;
+        }
+
+        public static async Task<clsTransaction?> FindFirst(int UserId)
+        {
+            DTOTransaction? DTO = await ConnectionLayer.clsTransaction.FindFirst(UserId);
+            return DTO != null ? new clsTransaction(DTO) : null;
+        }
+
+        public static async Task<clsTransaction?> Find(int Id)
+        {
+            DTOTransaction? DTO = await ConnectionLayer.clsTransaction.Find(Id);
             return DTO != null ? new clsTransaction(DTO) : null;
         }
 
@@ -231,6 +249,18 @@ namespace BusinessLayer
                 // Handle parsing errors silently
                 return (null, null, null);
             }
+        }
+
+
+
+        public static async Task<List<string>?> getCurrecies(int CountryID)
+        {
+            return await ConnectionLayer.clsCurrency.GetCountryCurrecies(CountryID);
+        }
+
+        public static async Task<List<string>?> getCurrecies(string CountryName)
+        {
+            return await ConnectionLayer.clsCurrency.GetCountryCurrecies(CountryName);
         }
 
 
