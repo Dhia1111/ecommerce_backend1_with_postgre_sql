@@ -99,30 +99,30 @@ builder.Services.AddSingleton<Cloudinary>(sp =>
 
 
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowReactApp", policy =>
-    {
-        policy.WithOrigins("https://localhost:3000")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-
-    });
-});
-
-
 //builder.Services.AddCors(options =>
 //{
 //    options.AddPolicy("AllowReactApp", policy =>
 //    {
-//        policy.WithOrigins("https://bestphoneaccessories.netlify.app")
+//        policy.WithOrigins("https://localhost:3000")
 //              .AllowAnyHeader()
 //              .AllowAnyMethod()
 //              .AllowCredentials();
 
 //    });
 //});
+
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins("https://bestphoneaccessories.netlify.app")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+
+    });
+});
 
 
 builder.Services.AddControllers();

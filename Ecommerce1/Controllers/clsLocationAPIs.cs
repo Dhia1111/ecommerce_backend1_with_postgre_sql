@@ -218,7 +218,7 @@ public class clsLocationAPIs : ControllerBase
 
     public async Task<ActionResult> GetLocation()
     {
-      //  var Address = HttpContext.Connection.RemoteIpAddress?.ToString();
+       var Address =  Request.HttpContext.Connection.RemoteIpAddress?.ToString();
 
 
     //    if (Address != null&&long.TryParse(Address.ToString(),out long Ip))
