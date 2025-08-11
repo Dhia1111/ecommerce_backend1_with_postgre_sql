@@ -44,11 +44,11 @@ public class clsStripeHookControlerAPIs : ControllerBase
         // 1) Read the raw body
         var json = await new StreamReader(Request.Body).ReadToEndAsync();
 
-        var ErrorObject = clsTransaction.GetLastPaymentError(json);
+        var ErrorObject = clsStripe.GetLastPaymentError(json);
 
        
        
-        (string? TokenTransactionGUID,string? status)=clsTransaction.ParseStripePaymentEvent(json);
+        (string? TokenTransactionGUID,string? status)=clsStripe.ParseStripePaymentEvent(json);
 
 
         if (string.IsNullOrEmpty(TokenTransactionGUID) || string.IsNullOrEmpty(status))

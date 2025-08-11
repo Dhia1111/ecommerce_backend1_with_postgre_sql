@@ -278,7 +278,7 @@ public class clsTransactionAPIs : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<List<string>?>> GetAllCurrencies(int ID)
     {
-        List<string>? Currencies = await clsTransaction.getCurrecies(ID);
+        List<string>? Currencies = await clsCurrency.getCurrecies(ID);
         if (Currencies == null)
         {
             return StatusCode(500, new DTOGeneralResponse("We could not respond due to server error", 500, "NotSet"));
@@ -292,20 +292,25 @@ public class clsTransactionAPIs : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<List<string>?>> GetAllCurrencies(string CountryName)
     {
-        List<string>? Currencies = await clsTransaction.getCurrecies(CountryName);
+        List<string>? Currencies = await clsCurrency.getCurrecies(CountryName);
         if (Currencies == null)
         {
             return StatusCode(500, new DTOGeneralResponse("We could not respond due to server error", 500, "NotSet"));
         }
 
+    
         return Ok(Currencies);
+  
+
+
     }
+
 
 
     [HttpGet("GetExchangeRatesToUsd")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<List<string>?>> GetExchangeRates()
+    public async Task<ActionResult<List<KeyValuePair<string, float>>>>GetExchangeRates()
     {
         string? objCurrencyExchange;
         try

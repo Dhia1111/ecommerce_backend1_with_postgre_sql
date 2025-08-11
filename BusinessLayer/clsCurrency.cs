@@ -19,18 +19,19 @@ namespace BusinessLayer
         }
 
 
-        public static float GetCurrencyExchange(string CurrencyCode, List<KeyValuePair<string,float>> ListOFCurrencies)
+        public static float GetCurrencyExchange(string CurrencyCode, List<KeyValuePair<string, float>> ListOFCurrencies)
         {
 
             foreach (var e in ListOFCurrencies)
             {
 
-                if (e.Key.ToLower() == CurrencyCode.ToLower()) { 
-                
-                return e.Value;
+                if (e.Key.ToLower() == CurrencyCode.ToLower())
+                {
+
+                    return e.Value;
                 }
 
-                
+
 
             }
             return 0;
@@ -45,7 +46,7 @@ namespace BusinessLayer
                 PropertyNameCaseInsensitive = true,  // Ignore case differences
                                                      // Add converters if needed (e.g., for DateOnly)
             };
-            var data = JsonSerializer.Deserialize<clsCurrencyData>(json,options)
+            var data = JsonSerializer.Deserialize<clsCurrencyData>(json, options)
             ;
             var result = new List<KeyValuePair<string, float>>();
 
@@ -68,8 +69,29 @@ namespace BusinessLayer
                 Amount = (float)data.Amount
             };
         }
-    
-    
+
+
+        public static async Task<DTOCurrency?> Find(string CurrencyCode)
+        {
+
+            DTOCurrency? DTOC = await ConnectionLayer.clsCurrency.GetCurrncyInf(CurrencyCode);
+
+            return DTOC;
+        }
+
+
+
+        public static async Task<List<string>?> getCurrecies(int CountryID)
+        {
+            return await ConnectionLayer.clsCurrency.GetCountryCurrecies(CountryID);
+        }
+
+        public static async Task<List<string>?> getCurrecies(string CountryName)
+        {
+            return await ConnectionLayer.clsCurrency.GetCountryCurrecies(CountryName);
+        }
+
+
     }
 }
 

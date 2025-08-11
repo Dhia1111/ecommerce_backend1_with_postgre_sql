@@ -1,15 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using BusinessLayer;
+﻿using BusinessLayer;
+using Ecommerce1;
+using Ecommerce1.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using Stripe;
-
-using Ecommerce1;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Stripe.V2;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Stripe;
 using Stripe.Events;
+using Stripe.V2;
+using System.Net.Http;
 public class DTOPayment
 {
 
@@ -19,9 +20,12 @@ public class DTOPayment
 
     public DTOPerson? PersonInf { get; set; }
 
+    public string Currency{get; set; }
+
     public DTOPayment()
     {
         this.PaymentMethodID = "";
+        this.Currency="";
     }
 
 }
@@ -35,6 +39,12 @@ public class DTOPayment
 public class clsCustomerMangmentAPIs : ControllerBase
 {
 
+    private readonly IHttpClientFactory _factory;
+
+    public clsCustomerMangmentAPIs(IHttpClientFactory f)
+    {
+        _factory = f;
+    }
 
 
     [HttpGet("CartItems")]
@@ -141,6 +151,7 @@ public class clsCustomerMangmentAPIs : ControllerBase
 
         }
 
+
         else if (string.IsNullOrEmpty(PaymentInf.PaymentMethodID))
         {
             return BadRequest(new DTOGeneralResponse("null request,make sure to provied the  data", 400, "Athorization and  Validation Error"));
@@ -148,6 +159,7 @@ public class clsCustomerMangmentAPIs : ControllerBase
         }
 
         string? CountryCoude = await clsLocation.GetCountryCode(PaymentInf.PersonInf.Country);
+
         if (CountryCoude == null)
         {
 
@@ -155,11 +167,29 @@ public class clsCustomerMangmentAPIs : ControllerBase
             return BadRequest(new DTOGeneralResponse("unvalid data request :the Country Name is Uncorect", 400, "Validation Error"));
 
         }
+
         if (!await clsValidation.ValidateLocationAsync(PaymentInf.PersonInf.PostCodeAndLocation, PaymentInf.PersonInf.City, CountryCoude))
         {
 
 
             return BadRequest(new DTOGeneralResponse("You need to send a valiad data ,please Check the location (post code or location are wrogn", 400, "Validation Error"));
+
+        }
+
+        if (string.IsNullOrEmpty(PaymentInf.Currency))
+        {
+            return BadRequest(new DTOGeneralResponse("You need to Provied a valiad Data",400,"Invalaid data"));
+        }
+         DTOCurrency? Currency= await clsCurrency.Find(PaymentInf.Currency);
+       
+        if (Currency==null)
+        {
+            return BadRequest(new DTOGeneralResponse("You need to Provied a valiad Data", 400, "Invalaid data"));
+        }
+        if (!Currency.IsSported)
+        {
+            return BadRequest(new DTOGeneralResponse("the Currency You Provided is not sported by our payment methoed ,try with difrent currency", 400, "Invalaid data"));
+
 
         }
 
@@ -181,9 +211,7 @@ public class clsCustomerMangmentAPIs : ControllerBase
                 if (User == null)
                 {
                     return StatusCode(500, new DTOGeneralResponse("An unexpected server error occurred.", 500, "null requests"));
-
-
-                }
+}
 
             }
         }
@@ -238,7 +266,68 @@ public class clsCustomerMangmentAPIs : ControllerBase
 
         }
 
+        //Reusing the Transaction API To GatThe Rate
 
+ 
+        float ExChangeRate=-1;
+
+ 
+
+ 
+
+            string? objCurrencyExchange;
+            try
+            {
+
+                var Client = _factory.CreateClient("CurrencyExchange");
+
+
+                using var response = await Client.GetAsync($"?base=USD");
+                if (!response.IsSuccessStatusCode)
+                {
+                    return StatusCode(500, new DTOGeneralResponse(
+                     "Currency Exchange API returned an error status.",
+                    (uint)response.StatusCode,
+                     "HttpError"
+                ));
+                }
+
+                objCurrencyExchange = (await response.Content.ReadFromJsonAsync<object>())?.ToString();
+
+            }
+            catch (Exception e)
+            {
+
+                return StatusCode(500, new DTOGeneralResponse("Currency Exchange inf not found ", 500, "serchFilaier"));
+            }
+
+            List<KeyValuePair<string, float>> ListOfCurrencies = clsCurrency.GetCurrencyRates(objCurrencyExchange);
+
+
+
+
+        
+
+         
+
+
+        if (ListOfCurrencies != null)
+        {
+            foreach (var recored in ListOfCurrencies)
+            {
+                if (recored.Key.ToLower() == Currency.CurrecyCode?.ToLower())
+                {
+                    ExChangeRate=recored.Value;
+                    break;
+                }
+
+            }
+
+        }
+
+        if (ExChangeRate == -1) {
+            return StatusCode(500, new DTOGeneralResponse("Server failed to calc price for currency",500, "Could not get the Exchange Rate of the Currency"));
+                }
         if (PaymentInf.PersonInf != null)
         {
             User.Person.PostCode = PaymentInf.PersonInf.PostCodeAndLocation;
@@ -269,13 +358,16 @@ public class clsCustomerMangmentAPIs : ControllerBase
                     TotolePrice += (p.Price * Cartitem.NumberOfItems);
                 }
             }
+
+            float FinalePrice =  (float)TotolePrice * ExChangeRate;
+
+            TotolePrice = Math.Floor( decimal.Parse(FinalePrice.ToString())*100)/100;
         }
 
-        //Create The Product List IDs
 
-
-
-        clsTransaction NewTransaction = new clsTransaction(PaymentInf.PaymentMethodID, DTOTransaction.enState.Pending, TotolePrice, User.UserID, GuidID.Value.ToString(), PaymentInf.InCludedProductList);
+      
+        
+        clsTransaction NewTransaction = new clsTransaction(PaymentInf.PaymentMethodID, DTOTransaction.enState.Pending, TotolePrice, User.UserID, GuidID.Value.ToString(), PaymentInf.InCludedProductList,Currency.CurrencyID);
 
 
 
@@ -302,7 +394,7 @@ public class clsCustomerMangmentAPIs : ControllerBase
             var option = new PaymentIntentCreateOptions
             {
                 Amount = (long)(TotolePrice * 100),
-                Currency = "usd",
+                Currency =Currency.CurrecyCode,
                 PaymentMethod = PaymentInf.PaymentMethodID,
                 Confirm = false,
                 ReceiptEmail = User.Person.Email,

@@ -194,11 +194,10 @@ namespace ConnectionLayer
             return Products;
         }
 
-        public static async Task<List<DTOProduct>?> GetAllForCatigory(DTOCatygory.enCatigories Catigory)
+        public static async Task<List<DTOProduct>?> GetAllForCatigory(string Catigory)
         {
-            string qery = @"select * from ""Products"" join ""CatigoriesManager"" on ""CatigoriesManager"".""ProductID""=""Products"".""ProductID"" where ""CatigoriesManager"".""CatigoryID""=@CatigoryID";
-
- 
+            string qery = @"	    select * from ""Products"" join ""CatigoriesManager"" on""CatigoriesManager"".""ProductID""=""Products"".""ProductID"" join ""Catigories"" on  ""CatigoriesManager"".""CatigoryID""=""Catigories"".""CatigoryID"" where ""Catigories"".""CatigoryName""=@CatigoryName";
+           
             List<DTOProduct> Products = new List<DTOProduct>();
 
             try
@@ -209,7 +208,7 @@ namespace ConnectionLayer
 
                     using (NpgsqlCommand command = new NpgsqlCommand(qery, connection))
                     {
-                        command.Parameters.AddWithValue("@CatigoryID", (int)Catigory);
+                        command.Parameters.AddWithValue("@CatigoryName", Catigory);
                         using (NpgsqlDataReader Reader = await command.ExecuteReaderAsync())
                         {
                             while (Reader.Read())
@@ -231,6 +230,68 @@ namespace ConnectionLayer
                                     Product.ImageName = Reader["ProductImagePath"].ToString();
 
                                     Products.Add(Product);
+                                }
+
+                                else continue;
+
+
+
+
+                            }
+
+                        }
+
+
+                    }
+
+                }
+            }
+
+
+            catch
+            {
+
+                return null;
+            }
+
+
+
+
+            return Products;
+
+        }
+
+
+        public static async Task<List<string>?> GetAllForCatigoryNames(string CatigoryName)
+        {
+            string qery = @" select * from ""Catigories"" where ""Catigories"".""CatigoryName""Like @CatigoryName";
+
+            List<string> Products = new List<string>();
+
+            try
+            {
+                using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
+                {
+                    connection.Open();
+
+                    using (NpgsqlCommand command = new NpgsqlCommand(qery, connection))
+                    {
+                        command.Parameters.AddWithValue("@CatigoryName", $"%{CatigoryName}%");
+                        using (NpgsqlDataReader Reader = await command.ExecuteReaderAsync())
+                        {
+                            while (Reader.Read())
+                            {
+
+                                if ((
+                             Reader["CatigoryName"] != null
+
+                             )
+                             )
+                                {
+                                   
+
+                                    Products.Add(Reader["CatigoryName"]?.ToString());
+
                                 }
 
                                 else continue;

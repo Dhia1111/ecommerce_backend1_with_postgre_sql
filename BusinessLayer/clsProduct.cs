@@ -134,13 +134,18 @@ namespace BusinessLayer
 
         }
 
-        public static async Task<List<DTOProduct>?> GetAllProductForCatigory(DTOCatygory.enCatigories c)
+        public static async Task<List<DTOProduct>?> GetAllProductForCatigory(string c)
         {
             return await ConnectionLayer.clsProduct.GetAllForCatigory(c);
 
         }
+        public static async Task<List<string>?> GetAllCatigoryNames(string c)
+        {
+            return await ConnectionLayer.clsProduct.GetAllForCatigoryNames(c);
 
-         public async Task LoadProductCatigories()
+        }
+
+        public async Task LoadProductCatigories()
          {
               _Catigories=await ConnectionLayer.clsCatygory.GetAll(this.ID);
 

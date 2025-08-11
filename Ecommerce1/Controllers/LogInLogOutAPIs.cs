@@ -226,8 +226,6 @@ public class EcommerceController : ControllerBase
     }
 
 
-
-
     [HttpPost("LogIn", Name = "LogIn")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -317,7 +315,6 @@ public class EcommerceController : ControllerBase
 
 
     }
-
 
 
     [HttpPost("IsUserNameAvalibale", Name = "IsUserNameAvalibale")]

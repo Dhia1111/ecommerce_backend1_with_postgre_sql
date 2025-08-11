@@ -695,13 +695,13 @@ public class clsProductMangentAPIs : ControllerBase
 
     }
 
-    [HttpGet("GetAllProductsForCatigory/{CatigoryID}")]
+    [HttpGet("GetAllProductsForCatigory/{CatigoryName}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<DTOProduct>?>> GetAllProductsForCatigory(DTOCatygory.enCatigories CatigoryID)
+    public async Task<ActionResult<List<DTOProduct>?>> GetAllProductsForCatigory(string  CatigoryName)
 
     {
 
-        List<DTOProduct>? list = await clsProduct.GetAllProductForCatigory(CatigoryID);
+        List<DTOProduct>? list = await clsProduct.GetAllProductForCatigory(CatigoryName);
 
         if (list != null)
         {
@@ -719,12 +719,27 @@ public class clsProductMangentAPIs : ControllerBase
     }
 
 
+    [HttpGet("GetAllCatigoriesNames/{CatigoryName}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<string>?>> GetAllCatigoriesNames(string CatigoryName)
+
+    {
+
+        List<string>? list = await clsProduct.GetAllCatigoryNames(CatigoryName);
+
+      
+
+        return Ok(list);
+
+    }
 
 
-    [HttpGet("GetAllProductsForFilter/{CatigoryID}/{Currency}/{MinPrice}/{MaxPrice}")]
+
+
+    [HttpGet("GetAllProductsForFilter/{CatigoryName}/{Currency}/{MinPrice}/{MaxPrice}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<List<DTOProduct>?>> GetAllProductsForFilter(DTOCatygory.enCatigories CatigoryID, string Currency, int? MinPrice, int? MaxPrice)
+    public async Task<ActionResult<List<DTOProduct>?>> GetAllProductsForFilter(string CatigoryName, string Currency, int? MinPrice, int? MaxPrice)
     {
 
         string? objCurrencyExchange;
@@ -754,7 +769,7 @@ public class clsProductMangentAPIs : ControllerBase
         }
 
 
-        List<DTOProduct>? list = await clsProduct.GetAllProductForCatigory(CatigoryID);
+        List<DTOProduct>? list = await clsProduct.GetAllProductForCatigory(CatigoryName);
 
 
         List<KeyValuePair<string, float>> ListOfCurrencies = clsCurrency.GetCurrencyRates(objCurrencyExchange);
@@ -790,6 +805,7 @@ public class clsProductMangentAPIs : ControllerBase
 
 
         return Ok(list);
+
 
     }
 

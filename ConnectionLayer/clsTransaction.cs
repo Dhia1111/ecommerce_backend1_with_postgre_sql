@@ -24,7 +24,10 @@ public class DTOTransaction
 
     public string TransactionDate { get; set; }
 
-    public DTOTransaction(int ID, string PaymentMethodID, enState State, decimal TotolePrice, int CustomerID, string TransactionGUID, DateTime? Date = null)
+    public int CurrencyID {  get; set; }
+
+    public string CurrencyCode { get; set;}
+    public DTOTransaction(int ID, string PaymentMethodID, enState State, decimal TotolePrice, int CustomerID, string TransactionGUID,int CurrencyID, DateTime? Date = null, string currencyCode = null)
     {
         this.ID = ID;
         this.PaymentMethodID = PaymentMethodID;
@@ -32,7 +35,9 @@ public class DTOTransaction
         this.TotolePrice = TotolePrice;
         this.CustomerID = CustomerID;
         this.TransactionGUID = TransactionGUID;
-        this.TransactionDate = Date ==null?DateTime.Now.ToLongDateString():Date.Value.ToLongDateString();
+        this.CurrencyID = CurrencyID;
+        this.TransactionDate = Date == null ? DateTime.Now.ToLongDateString() : Date.Value.ToLongDateString();
+        CurrencyCode = currencyCode;
     }
 
 }
@@ -47,7 +52,7 @@ namespace ConnectionLayer
         public static async Task<DTOTransaction?> Find(int ID)
         {
 
-            DTOTransaction Transaction=new DTOTransaction(-1,"",DTOTransaction.enState.Pending,0,-1,"",DateTime.Now);
+            DTOTransaction Transaction=new DTOTransaction(-1,"",DTOTransaction.enState.Pending,0,-1,"",-1,DateTime.Now);
             string qery = @"select * From ""Transactions"" where ""TransactionID""=@TransactionID";
 
             try
@@ -70,6 +75,7 @@ namespace ConnectionLayer
                                                 byte.TryParse(Reader["TransactionState"].ToString(), out byte State) &&
                                                 decimal.TryParse(Reader["TransactionTotlePrice"].ToString(), out decimal TotolePrice) &&
                                                 int.TryParse(Reader["TransactionUserID"].ToString(), out int CustomerID) &&
+                                                int.TryParse(Reader["currency_id"].ToString(),out int CurrencyID) &&
                                                 Reader["TransactionPaymentMethodID"] != null &&
                                                 Reader["TransactionGUID"] != null &&
                                                 Reader["Date"] != null)
@@ -83,6 +89,7 @@ namespace ConnectionLayer
                                     Transaction.CustomerID = CustomerID;
                                     Transaction.TransactionGUID = Reader["TransactionGUID"].ToString();
                                     Transaction.TransactionDate = Reader["Date"].ToString();
+                                    Transaction.CurrencyID = CurrencyID;
                                     return Transaction;
                                 }
 
@@ -117,7 +124,7 @@ namespace ConnectionLayer
         public static async Task<DTOTransaction?> FindFirst(int UserID)
         {
 
-            DTOTransaction Transaction = new DTOTransaction(-1, "", DTOTransaction.enState.Pending, 0, -1, "", DateTime.Now);
+            DTOTransaction Transaction = new DTOTransaction(-1, "", DTOTransaction.enState.Pending, 0, -1, "",-1, DateTime.Now);
             string qery = @"select * From ""Transactions""   where ""TransactionUserID""= @TransactionUserID   limit @Limit ";
 
             try
@@ -141,6 +148,7 @@ namespace ConnectionLayer
                                                            byte.TryParse(Reader["TransactionState"].ToString(), out byte State) &&
                                                            decimal.TryParse(Reader["TransactionTotlePrice"].ToString(), out decimal TotolePrice) &&
                                                            int.TryParse(Reader["TransactionUserID"].ToString(), out int CustomerID) &&
+                                                           int.TryParse(Reader["currency_id"].ToString(), out int CurrencyID) &&
                                                            Reader["TransactionPaymentMethodID"] != null &&
                                                            Reader["TransactionGUID"] != null &&
                                                            Reader["Date"] != null)
@@ -154,6 +162,7 @@ namespace ConnectionLayer
                                     Transaction.CustomerID = CustomerID;
                                     Transaction.TransactionGUID = Reader["TransactionGUID"].ToString();
                                     Transaction.TransactionDate = Reader["Date"].ToString();
+                                    Transaction.CurrencyID = CurrencyID;
                                     return Transaction;
                                 }
 
@@ -207,10 +216,11 @@ namespace ConnectionLayer
 
                             if (Reader.Read())
                             {
-                                DTOTransaction Transaction = new DTOTransaction(-1, "", 0, 0, -1, "");
+                                DTOTransaction Transaction = new DTOTransaction(-1, "",DTOTransaction.enState.Pending , 0, -1,"",-1);
 
                                 if (
                                         int.TryParse(Reader["TransactionID"].ToString(), out int TransactionID) &&
+                                         int.TryParse(Reader["currency_id"].ToString(), out int CurrencyID) &&
                                         byte.TryParse(Reader["TransactionState"].ToString(), out byte State) &&
                                         int.TryParse(Reader["TransactionTotlePrice"].ToString(), out int TotolePrice) &&
                                         int.TryParse(Reader["TransactionUserID"].ToString(), out int CustomerID) &&
@@ -226,6 +236,7 @@ namespace ConnectionLayer
                                     Transaction.TotolePrice = TotolePrice;
                                     Transaction.CustomerID = CustomerID;
                                     Transaction.TransactionGUID = Reader["TransactionGUID"].ToString();
+                                    Transaction.CurrencyID = CurrencyID;
                                     Transaction.TransactionDate = Reader["Date"].ToString();
 
                                     return Transaction;
@@ -261,7 +272,8 @@ namespace ConnectionLayer
         }
         public static async Task<List<DTOTransaction>?> GetAll()
         {
-            string qery = @"select*From ""Transactions""";
+            string qery = @"SELECT ""Transactions"".*,currency_code 
+	FROM ""Transactions"" join currencies on ""Transactions"".currency_id=currencies.id;";
 
             List<DTOTransaction> Transaction = new List<DTOTransaction>();
 
@@ -280,15 +292,21 @@ namespace ConnectionLayer
                             {
                                 if (
                                       int.TryParse(Reader["TransactionID"].ToString(), out int TransactionID) &&
+                                      int.TryParse(Reader["currency_id"].ToString(), out int CurrencyID) &&
                                       byte.TryParse(Reader["TransactionState"].ToString(), out byte State) &&
                                       decimal.TryParse(Reader["TransactionTotlePrice"].ToString(), out decimal TotolePrice) &&
                                       int.TryParse(Reader["TransactionUserID"].ToString(), out int CustomerID) &&
                                       Reader["TransactionPaymentMethodID"] != null &&
-                                      Reader["TransactionGUID"] != null && 
-                                      Reader["Date"]!=null)
+                                      Reader["TransactionGUID"] != null &&
+                                          Reader["currency_code"] != null &&
+                                      Reader["Date"] != null
+
+                                      )
 
                                 {
-                                    Transaction.Add(new DTOTransaction(TransactionID, Reader["TransactionPaymentMethodID"].ToString(), (DTOTransaction.enState)State,TotolePrice ,CustomerID, Reader["TransactionGUID"].ToString(), DateTime.Parse(Reader["Date"].ToString())));
+                                    string CurreyCode = Reader["currency_code"].ToString();
+
+                                    Transaction.Add(new DTOTransaction(TransactionID, Reader["TransactionPaymentMethodID"].ToString(), (DTOTransaction.enState)State,TotolePrice ,CustomerID, Reader["TransactionGUID"].ToString(),CurrencyID,DateTime.Parse(Reader["Date"].ToString()),CurreyCode));
 
                                 }
 
@@ -323,9 +341,9 @@ namespace ConnectionLayer
         public static async Task<int> Add(DTOTransaction Transaction)
         {
 
-            string qery = @"insert into ""Transactions""(""TransactionPaymentMethodID"",""TransactionState"" ,""TransactionTotlePrice"",""TransactionUserID"",""TransactionGUID"",""Date"")
+            string qery = @"insert into ""Transactions""(""TransactionPaymentMethodID"",""TransactionState"" ,""TransactionTotlePrice"",""TransactionUserID"",""TransactionGUID"",""Date"",currency_id)
 
-          values(@TransactionPaymentMethodID,@TransactionState,@TransactionTotlePrice,@TransactionUserID,@TransactionGUID,@Date)
+          values(@TransactionPaymentMethodID,@TransactionState,@TransactionTotlePrice,@TransactionUserID,@TransactionGUID,@Date,@currency_id)
 
                     RETURNING ""TransactionID"";";
             
@@ -344,6 +362,7 @@ namespace ConnectionLayer
                         command.Parameters.AddWithValue("@TransactionTotlePrice", Transaction.TotolePrice);
                         command.Parameters.AddWithValue("@TransactionUserID", Transaction.CustomerID);
                         command.Parameters.AddWithValue("@TransactionGUID", Guid.Parse(Transaction.TransactionGUID));
+                        command.Parameters.AddWithValue("@currency_id", Transaction.CurrencyID);
                         command.Parameters.AddWithValue("@Date", DateTime.Now);
 
 

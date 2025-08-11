@@ -33,7 +33,11 @@ namespace BusinessLayer
 
         public Guid TransactionGUID { get; set; }
 
-        public DTOTransaction dtoTransaction { get { return new DTOTransaction(this._ID, this.PaymentMethodID, this.State, this.TotolePrice, this.CustomerID, this.TransactionGUID.ToString(),_TransactionDate); } }
+
+        public int CurrencyID { get; set; }
+
+
+        public DTOTransaction dtoTransaction { get { return new DTOTransaction(this._ID, this.PaymentMethodID, this.State, this.TotolePrice, this.CustomerID, this.TransactionGUID.ToString(),CurrencyID,_TransactionDate); } }
 
          clsTransaction(DTOTransaction dto)  {
             if (dto == null) return;
@@ -43,13 +47,14 @@ namespace BusinessLayer
             this.TotolePrice = dto.TotolePrice.Value;
             this.CustomerID = dto.CustomerID.Value;
             this.TransactionGUID =Guid.TryParse(dto.TransactionGUID,out Guid GUID)?GUID:Guid.Empty ;
+            this.CurrencyID = dto.CurrencyID;
             this._Mode = enMode.Update;
             this._TransactionDate = DateTime.Parse(dto.TransactionDate);
         
         }
 
 
-        public clsTransaction( string PaymentMethodID, DTOTransaction.enState State, decimal TotolePrice, int CustomerID, string TransactionGUID,List<DTOCartItem>?ProductIncludedIDsList)
+        public clsTransaction( string PaymentMethodID, DTOTransaction.enState State, decimal TotolePrice, int CustomerID, string TransactionGUID,List<DTOCartItem>?ProductIncludedIDsList,int CurrencyID)
         {
             this._ID = -1;
             this.PaymentMethodID = PaymentMethodID;
@@ -60,6 +65,7 @@ namespace BusinessLayer
             this._Mode = enMode.Add;
             this._ProductIdsList = ProductIncludedIDsList;
             this._TransactionDate = DateTime.Now;
+            this.CurrencyID = CurrencyID;
 
 
         }
@@ -153,115 +159,10 @@ namespace BusinessLayer
         }
 
 
-        public static (string? TransactionGuid, string? PaymentStatus) ParseStripePaymentEvent(string json)
-        {
-            try
-            {
-                // Check for empty/null JSON
-                if (string.IsNullOrWhiteSpace(json))
-                {
-                    throw new ArgumentException("JSON input cannot be null or empty");
-                }
-
-                // Parse the JSON
-
-                var jsonObject = JObject.Parse(json);
-                var DataObject = jsonObject["data"];
-                var paymentObject = DataObject["object"];
-
-                // Check if the object exists
-                if (paymentObject == null)
-                {
-                    throw new KeyNotFoundException("'object' property not found in JSON");
-                }
-
-                // Extract TransactionGUID from metadata
-                string? transactionGuid = null;
-                var metadata = paymentObject["metadata"];
-                if (metadata != null)
-                {
-                    transactionGuid = metadata["TransactionGUID"]?.ToString();
-
-                    // Alternative case-insensitive check
-                    if (transactionGuid == null)
-                    {
-                        transactionGuid = metadata.Children<JProperty>()
-                            .FirstOrDefault(x => x.Name.Equals("TransactionGUID", StringComparison.OrdinalIgnoreCase))?
-                            .Value.ToString();
-                    }
-                }
-
-                // Extract payment status
-                var paymentStatus = paymentObject["status"]?.ToString();
-
-                // Validate required fields
-                if (paymentStatus == null)
-                {
-                    throw new KeyNotFoundException("Payment status not found in JSON");
-                }
-
-                return (transactionGuid, paymentStatus);
-            }
-            catch (JsonReaderException ex)
-            {
-                Console.WriteLine($"Invalid JSON format: {ex.Message}");
-                return (null, null);
-            }
-            catch (Exception ex) when (
-                ex is ArgumentException ||
-                ex is KeyNotFoundException)
-            {
-                Console.WriteLine($"Data parsing error: {ex.Message}");
-                return (null, null);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Unexpected error: {ex.Message}");
-                return (null, null);
-            }
-        }
+       
 
 
 
-
-        public static (string? Code, string? Message, string? PaymentMethodId) GetLastPaymentError(string json)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(json))
-                    return (null, null, null);
-                var objJson = JObject.Parse(json);
-                var Data = objJson["data"];
-                var ObjectsHolder = Data["object"];
-                var paymentError = ObjectsHolder["last_payment_error"];
-
-                if (paymentError == null || paymentError.Type == JTokenType.Null)
-                    return (null, null, null);
-
-                return (
-                    Code: paymentError["code"]?.ToString(),
-                    Message: paymentError["message"]?.ToString(),
-                    PaymentMethodId: paymentError["payment_method"]?["id"]?.ToString()
-                );
-            }
-            catch
-            {
-                // Handle parsing errors silently
-                return (null, null, null);
-            }
-        }
-
-
-
-        public static async Task<List<string>?> getCurrecies(int CountryID)
-        {
-            return await ConnectionLayer.clsCurrency.GetCountryCurrecies(CountryID);
-        }
-
-        public static async Task<List<string>?> getCurrecies(string CountryName)
-        {
-            return await ConnectionLayer.clsCurrency.GetCountryCurrecies(CountryName);
-        }
 
 
     }
