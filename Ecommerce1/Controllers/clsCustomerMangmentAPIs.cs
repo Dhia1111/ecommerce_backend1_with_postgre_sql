@@ -40,14 +40,10 @@ public class clsCustomerMangmentAPIs : ControllerBase
 {
 
     private readonly IHttpClientFactory _factory;
-    private  readonly ILocationService _locationService;
-    private readonly ICurrencyService _currencyService;
 
-    public clsCustomerMangmentAPIs(IHttpClientFactory f,ILocationService l, ICurrencyService currencyService)
+    public clsCustomerMangmentAPIs(IHttpClientFactory f)
     {
         _factory = f;
-        _locationService = l;
-        _currencyService = currencyService;
     }
 
 
@@ -133,7 +129,7 @@ public class clsCustomerMangmentAPIs : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
 
 
-    public async Task<ActionResult<DTOGeneralResponse?>> Payment([FromBody] DTOPayment PaymentInf)
+    public async Task<ActionResult<object>> Payment([FromBody] DTOPayment PaymentInf)
 
     {
  
@@ -162,7 +158,7 @@ public class clsCustomerMangmentAPIs : ControllerBase
 
         }
 
-        string? CountryCoude = await _locationService.GetCountryCode(PaymentInf.PersonInf.Country);
+        string? CountryCoude = await clsLocation.GetCountryCode(PaymentInf.PersonInf.Country);
 
         if (CountryCoude == null)
         {
@@ -184,8 +180,7 @@ public class clsCustomerMangmentAPIs : ControllerBase
         {
             return BadRequest(new DTOGeneralResponse("You need to Provied a valiad Data",400,"Invalaid data"));
         }
-
-         DTOCurrency? Currency= await _currencyService.Find(PaymentInf.Currency);
+         DTOCurrency? Currency= await clsCurrency.Find(PaymentInf.Currency);
        
         if (Currency==null)
         {
@@ -306,7 +301,7 @@ public class clsCustomerMangmentAPIs : ControllerBase
                 return StatusCode(500, new DTOGeneralResponse("Currency Exchange inf not found ", 500, "serchFilaier"));
             }
 
-            List<KeyValuePair<string, float>> ListOfCurrencies = _currencyService.GetCurrencyRates(objCurrencyExchange);
+            List<KeyValuePair<string, float>> ListOfCurrencies = clsCurrency.GetCurrencyRates(objCurrencyExchange);
 
 
 
@@ -426,7 +421,7 @@ public class clsCustomerMangmentAPIs : ControllerBase
 
                         Country = PaymentInf.PersonInf.Country,
                         City = PaymentInf.PersonInf.City,
-                        PostalCode = _locationService.ExtractPostCodeFromPostCodeAndLocation(PaymentInf.PersonInf.PostCodeAndLocation),
+                        PostalCode = clsLocation.ExtractPostCodeFromPostCodeAndLocation(PaymentInf.PersonInf.PostCodeAndLocation),
 
                     }
 

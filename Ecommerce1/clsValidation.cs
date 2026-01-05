@@ -1,11 +1,10 @@
 ﻿using System.Text.Json;
 
-
-
 namespace Ecommerce1
 {
     public static class clsValidation
     {
+        private static readonly HttpClient client = new HttpClient();
 
         private static  IHttpClientFactory _httpClientFactory ;
             public static void Insilaze(IHttpClientFactory If)
@@ -91,6 +90,5 @@ namespace Ecommerce1
             }
             return false; // Not a valid decimal
         }
-   
     }
 }

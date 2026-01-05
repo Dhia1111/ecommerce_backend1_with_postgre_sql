@@ -5,31 +5,9 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-
-
 namespace BusinessLayer
 {
-    public interface IIP2Location
-    {
-
-        public long Id { get; }
-        public long IpFrom { get; set; }
-        public long IpTo { get; set; }
-        public string CountryCode { get; set; }
-        public string CountryName { get; set; }
-        public DTOIP2Location DTO { get; }
-
-        public Task<bool> Save();
-        public Task<DTOIP2Location?> FindByIpAddress(long ipAddress);
-        public Task<DTOIP2Location?> FindByUniqID(long id);
-        public Task<List<DTOIP2Location>?> GetAll();
-        public Task<bool> Delete(int id);
-
-        public double ParseScientificToBigInteger(string input);
-        public List<DTOIP2Location> ReadCsvFileSimple(string filePath);
-    }
-
-    public class clsIP2Location:IIP2Location
+    public class clsIP2Location
     {
         enum enMode { Add, Update }
 
@@ -41,13 +19,26 @@ namespace BusinessLayer
         public string CountryCode { get; set; }
         public string CountryName { get; set; }
         public DTOIP2Location DTO { get { return new DTOIP2Location(this._ID, this.IpFrom, this.IpTo, this.CountryCode, this.CountryName); } }
-        public clsIP2Location()
+        public clsIP2Location(long IpFrom, long IpTo, string CountryCode, string CountryName)
         {
-      
+            this.IpFrom = IpFrom;
+            this.IpTo = IpTo;
+            this.CountryCode = CountryCode;
+            this.CountryName = CountryName;
             _Mode = enMode.Add;
 
         }
 
+        clsIP2Location(DTOIP2Location LocationItem)
+        {
+            this._ID = LocationItem.Id;
+            this.IpFrom = LocationItem.IpFromBigInt;
+            this.IpTo = LocationItem.IpToBigInt;
+            this.CountryCode = LocationItem.CountryCode;
+            this.CountryName = LocationItem.CountryName;
+            _Mode = enMode.Update;
+
+        }
 
 
         async Task<bool> _Add()
@@ -84,41 +75,41 @@ namespace BusinessLayer
         }
 
 
-        public  async Task<DTOIP2Location?> FindByIpAddress(long IpAddress)
+        public static async Task<clsIP2Location?> FindByIpAddress(long IpAddress)
         {
 
             DTOIP2Location? item = await ConnectionLayer.clsIP2Location.GetIp2Location(IpAddress);
 
             if (item == null) { return null; }
 
-            return (item);
+            return new clsIP2Location(item);
 
 
 
         }
 
 
-        public  async Task<DTOIP2Location?> FindByUniqID(long ID)
+        public static async Task<clsIP2Location?> FindbyUniqID(long ID)
         {
 
             DTOIP2Location? item = await ConnectionLayer.clsIP2Location.GetIp2LocationById(ID);
 
             if (item == null) { return null; }
 
-            return (item);
+            return new clsIP2Location(item);
 
 
 
         }
 
 
-        public  async Task<List<DTOIP2Location>?> GetAll()
+        public static async Task<List<DTOIP2Location>?> GetAll()
         {
             return await ConnectionLayer.clsIP2Location.GetAllIp2Location();
         }
 
 
-        public  async Task<bool> Delete(int Id)
+        public static async Task<bool> Delete(int Id)
         {
             return await ConnectionLayer.clsIP2Location.DeleteIp2Location(Id);
 
@@ -126,7 +117,8 @@ namespace BusinessLayer
 
         }
 
-        private double RoundToNearestInteger(BigInteger dividend, BigInteger divisor)
+
+        private static BigInteger RoundToNearestInteger(BigInteger dividend, BigInteger divisor)
         {
             if (divisor <= 0)
                 throw new ArgumentException("Divisor must be positive");
@@ -144,10 +136,9 @@ namespace BusinessLayer
                 quotient++;
             }
 
-            return (double)(dividend.Sign * quotient);
+            return dividend.Sign * quotient;
         }
-
-        public  double ParseScientificToBigInteger(string input)
+        public static BigInteger ParseScientificToBigInteger(string input)
         {
             // Split input into base and exponent parts
             string[] parts = input.Split('e', 'E');
@@ -205,18 +196,18 @@ namespace BusinessLayer
             // Apply exponentiation
             if (adjustedExponent > 0)
             {
-                return (double) (baseValue * BigInteger.Pow(10, adjustedExponent));
+                return baseValue * BigInteger.Pow(10, adjustedExponent);
             }
             else if (adjustedExponent < 0)
             {
                 // Round to nearest integer for negative exponents
                 BigInteger divisor = BigInteger.Pow(10, -adjustedExponent);
-                return (double)RoundToNearestInteger(baseValue, divisor);
+                return RoundToNearestInteger(baseValue, divisor);
             }
 
-            return (double) baseValue; // exponent == 0
+            return baseValue; // exponent == 0
         }
-        public  List<DTOIP2Location> ReadCsvFileSimple(string filePath)
+        public static List<DTOIP2Location> ReadCsvFileSimple(string filePath)
         {
 
             int Counter = 0;
@@ -250,7 +241,7 @@ namespace BusinessLayer
 
             return records;
         }
-        private  void LogValidationErrors(List<string> errors, string filePath, int validCount, int totalCount)
+        private static void LogValidationErrors(List<string> errors, string filePath, int validCount, int totalCount)
         {
             string logFilePath = Path.ChangeExtension(filePath, ".log");
 
