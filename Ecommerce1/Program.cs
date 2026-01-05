@@ -1,17 +1,15 @@
 
-using BusinessLayer;
-using CloudinaryDotNet;
-using ConnectionLayer;
-using Ecommerce1;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Stripe;
-using System.Net;
 using System.Text;
+using Microsoft.Extensions.Configuration;
+using System.Net;
+using Microsoft.Extensions.FileProviders;
+using Ecommerce1;
+using Stripe;
+using CloudinaryDotNet;
  
 
 
@@ -63,14 +61,6 @@ builder.Services.AddSingleton<Cloudinary>(sp =>
     return new Cloudinary(account);
 });
 
-builder.Services.AddScoped<ILocationRepo, ConnectionLayer.clsLocation>();
-builder.Services.AddScoped<ILocationProvider,BusinessLayer.clsLocationProvider>();
-builder.Services.AddScoped<ILocationService, BusinessLayer.clsLocation>();
-builder.Services.AddScoped<ICurrencyRepo, ConnectionLayer.clsCurrency>();
-builder.Services.AddScoped<ICurrencyService, BusinessLayer.clsCurrency>();
-builder.Services.AddScoped<IIP2Location, BusinessLayer.clsIP2Location>();
-
-
 
 //builder.Services.AddAuthentication((option) =>
 //{
@@ -113,14 +103,16 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins("https://localhost:3000")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
+
     });
 });
 
- //builder.Services.AddCors(options =>
+
+//builder.Services.AddCors(options =>
 //{
 //    options.AddPolicy("AllowReactApp", policy =>
 //    {

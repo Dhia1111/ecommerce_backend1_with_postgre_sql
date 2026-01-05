@@ -4,50 +4,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
-using  BusinessLayer;
-
-
-
-
-
-
+using System.Text.Json;
 namespace BusinessLayer
 {
-    public interface ICurrencyService
+    public class clsCurrency
     {
-        float GetCurrencyExchange(string currencyCode, List<KeyValuePair<string, float>> listOfCurrencies);
-
-        List<KeyValuePair<string, float>> GetCurrencyRates(string json);
-
-        DTOCurrencyData GetCurrencyInfo(string json);
-
-        Task<DTOCurrency?> Find(string currencyCode);
-
-        Task<List<string>?> GetCurrencies(int countryId, bool Sported = true);
-
-        Task<List<string>?> GetCurrencies(string countryName, bool Sported = true);
-
-    }
-
-    public class DTOCurrencyData
-    {
-        public double Amount { get; set; }
-        public string Base { get; set; }
-        public DateTime Date { get; set; }
-        public Dictionary<string, double> Rates { get; set; }
-    }
-    public class clsCurrency:ICurrencyService
-    {
-
-        private readonly ConnectionLayer.ICurrencyRepo _currencyRepo;
-        public clsCurrency(ConnectionLayer.ICurrencyRepo currencyRepo)
+        public class clsCurrencyData
         {
-            _currencyRepo = currencyRepo;
+            public double Amount { get; set; }
+            public string Base { get; set; }
+            public DateTime Date { get; set; }
+            public Dictionary<string, double> Rates { get; set; }
         }
 
-        public  float GetCurrencyExchange(string CurrencyCode, List<KeyValuePair<string, float>> ListOFCurrencies)
+
+        public static float GetCurrencyExchange(string CurrencyCode, List<KeyValuePair<string, float>> ListOFCurrencies)
         {
 
             foreach (var e in ListOFCurrencies)
@@ -67,14 +39,14 @@ namespace BusinessLayer
         }
 
 
-        public  List<KeyValuePair<string, float>> GetCurrencyRates(string json)
+        public static List<KeyValuePair<string, float>> GetCurrencyRates(string json)
         {
             var options = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,  // Ignore case differences
                                                      // Add converters if needed (e.g., for DateOnly)
             };
-            var data = JsonSerializer.Deserialize<DTOCurrencyData>(json, options)
+            var data = JsonSerializer.Deserialize<clsCurrencyData>(json, options)
             ;
             var result = new List<KeyValuePair<string, float>>();
 
@@ -87,10 +59,10 @@ namespace BusinessLayer
         }
 
 
-        public  DTOCurrencyData GetCurrencyInfo(string json)
+        public static clsCurrencyData GetCurrencyInfo(string json)
         {
-            var data = JsonSerializer.Deserialize<DTOCurrencyData>(json);
-            return new DTOCurrencyData
+            var data = JsonSerializer.Deserialize<clsCurrencyData>(json);
+            return new clsCurrencyData
             {
                 Base = data.Base,
                 Date = data.Date,
@@ -99,32 +71,24 @@ namespace BusinessLayer
         }
 
 
-        public  async Task<DTOCurrency?> Find(string CurrencyCode)
+        public static async Task<DTOCurrency?> Find(string CurrencyCode)
         {
 
-            DTOCurrency? DTOC = await _currencyRepo.GetCurrencyInfo(CurrencyCode);
+            DTOCurrency? DTOC = await ConnectionLayer.clsCurrency.GetCurrncyInf(CurrencyCode);
 
             return DTOC;
         }
 
 
 
-        public  async Task<List<string>?> GetCurrencies(int CountryID,bool Sported=true)
+        public static async Task<List<string>?> getCurrecies(int CountryID)
         {
-        
-            List<DTOCurrency>?currencies = await _currencyRepo.GetCountryCurrencies(CountryID,Sported);
-
-            if (currencies == null || currencies.Count == 0) return null;
-
-            else return currencies.Select(c => c.CurrecyCode).ToList();
+            return await ConnectionLayer.clsCurrency.GetCountryCurrecies(CountryID);
         }
 
-        public  async Task<List<string>?> GetCurrencies(string CountryName,bool Sported=true)
+        public static async Task<List<string>?> getCurrecies(string CountryName)
         {
-            List<DTOCurrency>? currencies= await _currencyRepo.GetCountryCurrencies(CountryName,Sported);
-            if(currencies==null||currencies.Count==0) return null;   
-
-          else  return currencies.Select(c => c.CurrecyCode).ToList();
+            return await ConnectionLayer.clsCurrency.GetCountryCurrecies(CountryName);
         }
 
 

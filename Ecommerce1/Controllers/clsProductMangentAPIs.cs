@@ -1,6 +1,5 @@
 ﻿
 
-using Ecommerce1;
 
 namespace Ecommerce1.Controllers;
 using BusinessLayer;
@@ -12,12 +11,9 @@ using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using static DTOCatygory;
 using System.Linq;
-using Ecommerce1;
-
 
 public class DTOAddProductRequest
 {
-
     public string stProduct { get; set; }
     public IFormFile? Image { get; set; }
     public string stcatigories { get; set; }
@@ -52,12 +48,10 @@ public class clsProductMangentAPIs : ControllerBase
 {
     private readonly Cloudinary _cloudinary;
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ICurrencyService _currencyService;
-    public clsProductMangentAPIs(Cloudinary cloudinary, IHttpClientFactory httpClientFactory, ICurrencyService currencyService)
+    public clsProductMangentAPIs(Cloudinary cloudinary, IHttpClientFactory httpClientFactory)
     {
         _cloudinary = cloudinary;
         _httpClientFactory = httpClientFactory;
-        _currencyService = currencyService;
     }
 
     [HttpPost("AddProduct")]
@@ -69,7 +63,7 @@ public class clsProductMangentAPIs : ControllerBase
     {
         if (Request.Cookies.TryGetValue("Authentication", out string token))
         {
-            int? UserID =clsGlobale.ExtractUserIdFromToken(token);
+            int? UserID = clsGlobale.ExtractUserIdFromToken(token);
 
             if (UserID == null)
             {
@@ -169,7 +163,7 @@ public class clsProductMangentAPIs : ControllerBase
             // Upload to Cloudinary
             var uploadParams = new ImageUploadParams
             {
-                File = new FileDescription(BussnissclsGlobale.GetTheBestImageExtention(), obj.Image.OpenReadStream()),
+                File = new FileDescription(clsGlobale.GetTheBestImageExtention(), obj.Image.OpenReadStream()),
                 PublicId = $"{obj.Product.ImageName}"
             };
 
@@ -321,7 +315,7 @@ public class clsProductMangentAPIs : ControllerBase
 
         }
 
-        string Bestextention = BussnissclsGlobale.GetTheBestImageExtention();
+        string Bestextention = clsGlobale.GetTheBestImageExtention();
 
 
         if (obj.Image != null && obj.Image.Length != 0)
@@ -636,7 +630,7 @@ public class clsProductMangentAPIs : ControllerBase
         clsProduct? p = await clsProduct.Find(ID);
         if (p != null)
         {
-            p.ImageUrl = BussnissclsGlobale.SetImageURL(p.ImageName.ToString());
+            p.ImageUrl = clsGlobale.SetImageURL(p.ImageName.ToString());
             await p.LoadProductCatigories();
             return Ok(p.DTOProduct);
         }
@@ -653,7 +647,7 @@ public class clsProductMangentAPIs : ControllerBase
     {
         if (Request.Cookies.TryGetValue("Authentication", out string token))
         {
-            int? UserID =clsGlobale.ExtractUserIdFromToken(token);
+            int? UserID = clsGlobale.ExtractUserIdFromToken(token);
 
             if (UserID == null)
             {
@@ -691,7 +685,7 @@ public class clsProductMangentAPIs : ControllerBase
             foreach (DTOProduct p in list)
             {
 
-                p.ImageUrl = BussnissclsGlobale.SetImageURL(p.ImageName);
+                p.ImageUrl = clsGlobale.SetImageURL(p.ImageName);
 
             }
         }
@@ -714,7 +708,7 @@ public class clsProductMangentAPIs : ControllerBase
             foreach (DTOProduct p in list)
             {
 
-                if (p != null) p.ImageUrl = BussnissclsGlobale.SetImageURL(p.ImageName);
+                if (p != null) p.ImageUrl = clsGlobale.SetImageURL(p.ImageName);
 
             }
         }
@@ -778,7 +772,7 @@ public class clsProductMangentAPIs : ControllerBase
         List<DTOProduct>? list = await clsProduct.GetAllProductForCatigory(CatigoryName);
 
 
-        List<KeyValuePair<string, float>> ListOfCurrencies = _currencyService.GetCurrencyRates(objCurrencyExchange);
+        List<KeyValuePair<string, float>> ListOfCurrencies = clsCurrency.GetCurrencyRates(objCurrencyExchange);
 
         if (ListOfCurrencies == null)
         {
@@ -786,7 +780,7 @@ public class clsProductMangentAPIs : ControllerBase
         }
 
 
-        float ExChangeRate = Currency.ToLower()=="usd"?1:_currencyService.GetCurrencyExchange(Currency, ListOfCurrencies);
+        float ExChangeRate = Currency.ToLower()=="usd"?1:clsCurrency.GetCurrencyExchange(Currency, ListOfCurrencies);
 
 
         if (list != null)
@@ -795,7 +789,7 @@ public class clsProductMangentAPIs : ControllerBase
             foreach (DTOProduct product in list)
             {
 
-                if (product != null) product.ImageUrl = BussnissclsGlobale.SetImageURL(product.ImageName);
+                if (product != null) product.ImageUrl = clsGlobale.SetImageURL(product.ImageName);
 
                 product.PriceInCurentCurrency = (decimal)(float.Parse(product.BasePriceInUSD.ToString()) * ExChangeRate);
 

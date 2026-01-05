@@ -6,39 +6,13 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-public class DTOLocation {
-
-    public string CountryCode {  get; set; }
-    public string CountryName { get; set; }
-  
-   public DTOLocation(string CountryCode,string CountryName)
-    {
-        this.CountryCode = CountryCode;
-        this.CountryName = CountryName;
-    }
-
-
-}
-
-
-
-
 namespace ConnectionLayer
 {
-    public interface ILocationRepo
-    {
-
-        public Task<string?> GetCountryCode(string CountryName);
-        public Task<List<DTOLocation>?> GetAllCountries();
-
-
-    }
-
-    public class clsLocation :ILocationRepo
+    public static class clsLocation
     {
 
 
-        public  async Task<string?> GetCountryCode(string countryName)
+        public static async Task<string?> GetCountryCode(string countryName)
         {
             string query =@$"SELECT   ""CountryCode"" FROM ""Countries"" WHERE ""CountryName"" = @CountryName LIMIT @LIMIT";
             string? countryCode = "";
@@ -72,11 +46,11 @@ namespace ConnectionLayer
         }
 
 
-        public  async Task<List<DTOLocation>?> GetAllCountries()
+        public static async Task<List<string>?> GetAllCountries()
         {
-            string query = @$"SELECT * FROM ""Countries""";
+            string query = @$"SELECT ""CountryName"" FROM ""Countries""";
 
-            List<DTOLocation> Countries = new List<DTOLocation>();
+            List<string> Countries = new List<string>();
 
             using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
             using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
@@ -90,9 +64,9 @@ namespace ConnectionLayer
 
                         while (Reader.Read())
                         {
-                            if (Reader["CountryName"] != null&& Reader["CountryCode"]!=null)
+                            if (Reader["CountryName"] != null)
                             {
-                                Countries.Add(new DTOLocation(Reader["CountryCode"].ToString(),Reader["CountryName"].ToString()));
+                                Countries.Add((Reader["CountryName"].ToString()));
 
                             }
                         }
@@ -113,7 +87,45 @@ namespace ConnectionLayer
 
 
 
-    
+        public static async Task<List<string>?> GetAllCurencies()
+        {
+            string query = @$"SELECT ""CurencyCode"" FROM ""Curenices""";
+
+            List<string> Countries = new List<string>();
+
+            using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
+            using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
+            {
+
+                try
+                {
+                    connection.Open();
+                    using (NpgsqlDataReader Reader = await command.ExecuteReaderAsync())
+                    {
+
+                        while (Reader.Read())
+                        {
+                            if (Reader["CountryName"] != null)
+                            {
+                                Countries.Add((Reader["CountryName"].ToString()));
+
+                            }
+                        }
+
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    // Handle exception or rethrow
+                    Console.WriteLine($"Error: {ex.Message}");
+                    return null;
+                }
+            }
+
+            return Countries;
+        }
+
 
     }
 }

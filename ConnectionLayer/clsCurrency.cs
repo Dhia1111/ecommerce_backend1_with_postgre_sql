@@ -24,38 +24,22 @@ public class DTOCurrency {
         CurrecyName = "";
     }
 
-    public DTOCurrency(int countryID, int currencyID, bool isSported, string? currecyCode, string? currecyName)
-    {
-        CountryID = countryID;
-        CurrencyID = currencyID;
-        IsSported = isSported;
-        CurrecyCode = currecyCode;
-        CurrecyName = currecyName;
-    }
-
 }
 
 namespace ConnectionLayer
 {
-    public interface ICurrencyRepo {
-
-        Task<List<DTOCurrency>?> GetCountryCurrencies(int countryId,bool Sported);
-        Task<List<DTOCurrency>?> GetCountryCurrencies(string CountryName, bool Sported);
-        Task<DTOCurrency?> GetCurrencyInfo(string currencyCode);
-
-    }
-    public   class clsCurrency: ICurrencyRepo
+    public static class clsCurrency
     {
 
 
-        public   async Task<List<DTOCurrency>?> GetCountryCurrencies(int CountryID,bool SprtedCurrencies=true)
+        public static async Task<List<string>?> GetCountryCurrecies(int CountryID)
         {
-            List<DTOCurrency> CurreciesForCountry = new List<DTOCurrency>();
+            List<string> CurreciesForCountry = new List<string>();
 
             string query = $@"
                 select * from country_currencies left join currencies 
                 on country_currencies.currency_id= currencies.id
-                where country_currencies.country_id=@ID and is_sported=@is_sported";
+                where country_currencies.country_id=@ID";
 
             try
             {
@@ -65,7 +49,6 @@ namespace ConnectionLayer
                     {
 
                         command.Parameters.AddWithValue("@ID", CountryID);
-                        command.Parameters.AddWithValue("@is_sported", SprtedCurrencies);
 
                         connection.Open();
 
@@ -76,15 +59,21 @@ namespace ConnectionLayer
                             {
 
 
-                                int? ID = int.Parse(reader["id"].ToString());
+                                if (
+                                    bool.TryParse(reader["is_sported"].ToString(), out bool IsSported))
+                                        
+                                {
 
-                                string? CurrecyName = reader["currency_name"]?.ToString();
-
+                                  
                                 string? CurrecyCode = reader["currency_code"]?.ToString();
 
-                                CurreciesForCountry.Add(new DTOCurrency(CountryID,ID.Value,SprtedCurrencies,CurrecyCode,CurrecyName));
-                                    
-                                
+
+                                 if(IsSported&&CurrecyCode!=null)   CurreciesForCountry.Add(CurrecyCode);
+                                    else
+                                    {
+                                        CurreciesForCountry.Add("not sported ");
+                                    }
+                                }
 
 
 
@@ -111,14 +100,17 @@ namespace ConnectionLayer
             }
         }
 
-        public async Task<List<DTOCurrency>?> GetCountryCurrencies(string CountryName, bool SprtedCurrencies = true)
+
+        public static async Task<List<string>?> GetCountryCurrecies(string CountryName)
         {
-            List<DTOCurrency> CurreciesForCountry = new List<DTOCurrency>();
+            List<string> CurreciesForCountry = new List<string>();
+
             string query = $@"
                 select * from country_currencies  left join ""Countries"" on 
                 country_currencies.country_id=""Countries"".""CountryID"" left join currencies 
                 on country_currencies.currency_id= currencies.id
-                where ""Countries"".""CountryName""=@CountryName and is_sported=@is_sported ";
+                where ""Countries"".""CountryName""=@CountryName ";
+
             try
             {
                 using (NpgsqlConnection connection = new NpgsqlConnection(clsConnectionGenral.ConnectionString))
@@ -127,7 +119,6 @@ namespace ConnectionLayer
                     {
 
                         command.Parameters.AddWithValue("@CountryName", CountryName);
-                        command.Parameters.AddWithValue("@is_sported", SprtedCurrencies);
 
                         connection.Open();
 
@@ -138,16 +129,23 @@ namespace ConnectionLayer
                             {
 
 
-                                int? ID = int.Parse(reader["id"].ToString());
+                                if (int.TryParse(reader["id"].ToString(), out int id) &&
+                                    int.TryParse(reader["country_id"].ToString(), out int CountryId) &&
+                                    int.TryParse(reader["currency_id"].ToString(), out int CurrencyID) &&
+                                    bool.TryParse(reader["is_sported"].ToString(), out bool IsSported))
 
-                                string? CurrecyName = reader["currency_name"]?.ToString();
+                                {
 
-                                string? CurrecyCode = reader["currency_code"]?.ToString();
-                                int ? CountryID = int.Parse(reader["country_id"]?.ToString());
-
-                                CurreciesForCountry.Add(new DTOCurrency(CountryID.Value, ID.Value, SprtedCurrencies, CurrecyCode, CurrecyName));
+                                   
+                                 string? CurrecyName = reader["currency_code"]?.ToString();
 
 
+                                  if(IsSported&&CurrecyName!=null)  CurreciesForCountry.Add(CurrecyName);
+                                    else
+                                    {
+                                        CurreciesForCountry.Add("not sported");
+                                    }
+                                }
 
 
 
@@ -176,8 +174,7 @@ namespace ConnectionLayer
         }
 
 
-
-        public   async Task<DTOCurrency?> GetCurrencyInfo(string CurrencyCode)
+        public static async Task<DTOCurrency?>GetCurrncyInf(string CurrencyCode)
         {
 
             DTOCurrency Currency = new DTOCurrency();
