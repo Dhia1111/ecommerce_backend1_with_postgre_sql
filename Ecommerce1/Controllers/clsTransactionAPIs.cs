@@ -22,10 +22,12 @@ using System.Security.Cryptography;
 public class clsTransactionAPIs : ControllerBase
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    public clsTransactionAPIs(IHttpClientFactory factory)
+    private readonly ICurrencyService _currencyService;
+    public clsTransactionAPIs(IHttpClientFactory factory,ICurrencyService s)
     {
 
         _httpClientFactory = factory;
+        _currencyService = s;
 
     }
 
@@ -47,7 +49,7 @@ public class clsTransactionAPIs : ControllerBase
         if (Request.Cookies.TryGetValue("Authentication", out string token1))
         {
 
-            int? UserID = clsGlobale.ExtractUserIdFromToken(token1);
+            int? UserID =clsGlobale.ExtractUserIdFromToken(token1);
 
             if (UserID == null)
             {
@@ -162,7 +164,7 @@ public class clsTransactionAPIs : ControllerBase
                 }
                 else
                 {
-                  list.Add(new {id=e.ID,name=p.Name,imageUrl=clsGlobale.SetImageURL(p.ImageName),price=p.Price, numberOfProduct=e.NumberOfProduct });
+                  list.Add(new {id=e.ID,name=p.Name,imageUrl=BussnissclsGlobale.SetImageURL(p.ImageName),price=p.Price, numberOfProduct=e.NumberOfProduct });
                 }
             }
 
@@ -192,7 +194,7 @@ public class clsTransactionAPIs : ControllerBase
         {
 
 
-            int? UserID = clsGlobale.ExtractUserIdFromToken(token1);
+            int? UserID =clsGlobale.ExtractUserIdFromToken(token1);
 
             if (UserID == null)
             {
@@ -278,7 +280,7 @@ public class clsTransactionAPIs : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<List<string>?>> GetAllCurrencies(int ID)
     {
-        List<string>? Currencies = await clsCurrency.getCurrecies(ID);
+        List<string>? Currencies = await _currencyService.GetCurrencies(ID);
         if (Currencies == null)
         {
             return StatusCode(500, new DTOGeneralResponse("We could not respond due to server error", 500, "NotSet"));
@@ -292,7 +294,7 @@ public class clsTransactionAPIs : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<List<string>?>> GetAllCurrencies(string CountryName)
     {
-        List<string>? Currencies = await clsCurrency.getCurrecies(CountryName);
+        List<string>? Currencies = await _currencyService.GetCurrencies(CountryName);
         if (Currencies == null)
         {
             return StatusCode(500, new DTOGeneralResponse("We could not respond due to server error", 500, "NotSet"));
@@ -338,7 +340,7 @@ public class clsTransactionAPIs : ControllerBase
             return StatusCode(500, new DTOGeneralResponse("Currency Exchange inf not found ", 500, "serchFilaier"));
         }
 
-        List<KeyValuePair<string, float>> ListOfCurrencies = clsCurrency.GetCurrencyRates(objCurrencyExchange);
+        List<KeyValuePair<string, float>> ListOfCurrencies = _currencyService.GetCurrencyRates(objCurrencyExchange);
 
 
 

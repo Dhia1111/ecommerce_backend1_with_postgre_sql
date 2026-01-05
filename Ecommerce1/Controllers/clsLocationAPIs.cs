@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
- using BusinessLayer;
+using BusinessLayer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -22,11 +22,12 @@ public class clsLocationAPIs : ControllerBase
 {
 
 
-    private IHttpClientFactory _httpClientFactory;
-
-    public clsLocationAPIs(IHttpClientFactory clientFactory)
+    private ILocationService _LocationService;
+    private IIP2Location _IP2Location;
+    public clsLocationAPIs( ILocationService LocationService, IIP2Location iP2Location)
     {
-        _httpClientFactory = clientFactory;
+        _LocationService = LocationService;
+        _IP2Location = iP2Location;
     }
 
 
@@ -35,10 +36,10 @@ public class clsLocationAPIs : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<List<string>?>> GetAllCounties()
     {
-         List<string>? counties =await clsLocation.GetAllCountries();
-        if(counties == null)
+        List<string>? counties = await _LocationService.GetAllCountries();
+        if (counties == null)
         {
-            return StatusCode(500,new DTOGeneralResponse("We could not respond due to server error",500,"NotSet"));
+            return StatusCode(500, new DTOGeneralResponse("We could not respond due to server error", 500, "NotSet"));
         }
 
         return Ok(counties);
@@ -53,91 +54,21 @@ public class clsLocationAPIs : ControllerBase
     public async Task<ActionResult<List<string>?>> GetAllCities(string CountryName)
     {
 
-        var client = _httpClientFactory.CreateClient("GeoClient");
-      
-        
-        string? CountryCoude = await clsLocation.GetCountryCode(CountryName);
-
-        if (CountryCoude == null)
+        if (string.IsNullOrEmpty(CountryName))
         {
+            return BadRequest(new DTOGeneralResponse("You should Provid the country name", 400, "Validation Error"));
 
-            return BadRequest(new DTOGeneralResponse("Invalid Country Name", 400, "Serch failer"));
-       
+            
         }
 
+        List<string>? Cyties = await _LocationService.GetAllCities(CountryName);
+
+        if (Cyties == null)
+            return StatusCode(500, new DTOGeneralResponse("Could not retrieve cities", 500, "NotSet"));
+
+        return Ok(Cyties);
 
 
-
-        try
-        {
-
-
-            using var response = await client.GetAsync($"searchJSON?&country={(CountryCoude)}&orderby=population&featureClass=P&maxRows=900&username={clsGlobale.GetgeonamesUserName()}");
-            if (!response.IsSuccessStatusCode)
-            {
-                return StatusCode(500, new DTOGeneralResponse(
-                 "GeoNames API returned an error status.",
-                (uint)response.StatusCode,
-                 "HttpError"
-            ));
-            }
-
-            var content = await response.Content.ReadAsStringAsync();
-
-            using var doc = JsonDocument.Parse(content);
-            var root = doc.RootElement;
-
-            if (!root.TryGetProperty("geonames", out var geonamesProp) || geonamesProp.ValueKind != JsonValueKind.Array)
-            {
-                return StatusCode(500, new DTOGeneralResponse(
-                   "Invalid JSON structure from GeoNames API",
-                   0,
-                  "ParsingError"
-     ));
-
-
-            }
-
-            List<string>? names = new List<string>();
-            foreach (var element in geonamesProp.EnumerateArray())
-            {
-                if (element.TryGetProperty("toponymName", out var toponymElement))
-                {
-                    var name = toponymElement.GetString();
-                    if (!string.IsNullOrEmpty(name)) { names.Add(name);  }
-                }
-            }
-
-            return Ok(names);
-        }
-        catch (HttpRequestException httpEx)
-        {
-            return StatusCode(500, new DTOGeneralResponse(
-                 httpEx.Message,
-                  0,
-                 "HttpRequestException"
-    ));
-
-        }
-        catch (JsonException jsonEx)
-        {
-
-            return StatusCode(500, new DTOGeneralResponse(
-            jsonEx.Message,
-            0,
-            "JsonException"
-          ));
-        }
-        catch (Exception ex)
-        {
-
-            return StatusCode(500, new DTOGeneralResponse(
-       ex.Message,
-       0,
-       "Unknown"
-     ));
-
-        }
     }
 
 
@@ -147,95 +78,47 @@ public class clsLocationAPIs : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<List<string>?>> GetPostCodes(string CountryName, string CityName)
     {
-        var client = _httpClientFactory.CreateClient("GeoClient");
-
-        CityName = CityName.Replace(" City", "").Trim();
-        string? countryCode = await clsLocation.GetCountryCode(CountryName);
-
-        if (string.IsNullOrEmpty(countryCode))
+        if (string.IsNullOrEmpty(CountryName))
         {
-            return BadRequest(new DTOGeneralResponse("Invalid Country Name", 400, "SearchFailure"));
+            return BadRequest(new DTOGeneralResponse("You should Provid the country name ", 400, "Validation Error"));
+
+
         }
-
-
-        try
+        if ( string.IsNullOrEmpty(CityName))
         {
+            return BadRequest(new DTOGeneralResponse("You should Provid the city name ", 400, "Validation Error"));
 
-            using var response = await client.GetAsync($"postalCodeSearchJSON?placename={CityName}&country={countryCode}&maxRows=500&orderby=population&username={clsGlobale.GetgeonamesUserName()}");
 
-            if (!response.IsSuccessStatusCode)
-            {
-                return StatusCode(500, new DTOGeneralResponse(
-                    "GeoNames API returned an error status.",
-                    (uint)response.StatusCode,
-                    "HttpError"
-                ));
-            }
-
-            var content = await response.Content.ReadAsStringAsync();
-
-            using var doc = JsonDocument.Parse(content);
-            var root = doc.RootElement;
-
-            if (!root.TryGetProperty("postalCodes", out var postalCodesProp) || postalCodesProp.ValueKind != JsonValueKind.Array)
-            {
-                return StatusCode(500, new DTOGeneralResponse(
-                    "Invalid JSON structure from GeoNames API",
-                    0,
-                    "ParsingError"
-                ));
-            }
-
-            List<string> postCodes = new List<string>();
-
-            foreach (var element in postalCodesProp.EnumerateArray())
-            {
-                if (element.TryGetProperty("postalCode", out var postalCodeElement)&& element.TryGetProperty("placeName", out var CityElement))
-                {
-                    var code = postalCodeElement.GetString();
-                    if (!string.IsNullOrEmpty(code)) postCodes.Add(code+"//"+CityElement);
-                }
-            }
-
-            return Ok(postCodes);
         }
-        catch (HttpRequestException httpEx)
+        var PostCodes= await _LocationService.PostCodes(CountryName,CityName);
+        if (PostCodes == null)
         {
-            return StatusCode(500, new DTOGeneralResponse(httpEx.Message, 0, "HttpRequestException"));
+            return StatusCode(500, new DTOGeneralResponse("the server is experincing a faileur pleas try later", 500, "")); 
         }
-        catch (JsonException jsonEx)
-        {
-            return StatusCode(500, new DTOGeneralResponse(jsonEx.Message, 0, "JsonException"));
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new DTOGeneralResponse(ex.Message, 0, "Unknown"));
-        }
+        return Ok(PostCodes);
     }
 
 
     [HttpGet("AddressDataByIpAddress")]
-
     public async Task<ActionResult> GetLocation()
     {
-       var Address =  Request.HttpContext.Connection.RemoteIpAddress?.ToString();
+        long Ip = 34640896;
+        var Address = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
 
 
-    //    if (Address != null&&long.TryParse(Address.ToString(),out long Ip))
-      
+    
         {
 
-            long Ip = 34640896;
 
-            clsIP2Location? location = await clsIP2Location.FindByIpAddress(Ip);
+            var location = await _IP2Location.FindByIpAddress(Ip);
 
 
-            return Ok(location?.DTO);
+            return Ok(location);
         }
-      
-       // return BadRequest(new DTOGeneralResponse("the IP Address is not valaid ", 400, "Serch error"));
+
 
     }
+
 
 }
 
